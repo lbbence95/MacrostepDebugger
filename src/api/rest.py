@@ -19,7 +19,7 @@ def APIdatacollector():
     """API site receiving data from VM endpoints.
 
     Returns:
-        string: An HTTP response with a JSON string describing the result.
+        response: An HTTP response with a JSON string describing the result.
     """
 
     request_data = request
