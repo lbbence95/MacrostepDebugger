@@ -9,7 +9,7 @@ def PrintConsoleInvalidData():
     """Prints an error message stating the received data were invalid.
     """
 
-    print('*** MSTEP DEBUGGER\r\nReceived INVALID data at DEBUGGER localtime: {}'.format(datetime.now().strftime('%H:%M:%S.%f')[:-3]))
+    print('*** MSTEP DEBUGGER\r\n*** Received INVALID data at DEBUGGER localtime: {}'.format(datetime.now().strftime('%H:%M:%S.%f')[:-3]))
     print('*** End Of Report\r\n*** MSTEP DEBUGGER')
 
 
@@ -38,7 +38,7 @@ def PrintConsoleRequestData(request_data):
 
     # Printing received information
      
-    print('*** MSTEP DEBUGGER\r\nReceived VALID data at DEBUGGER localtime: {}'.format(datetime.now().strftime('%H:%M:%S.%f')[:-3]))
+    print('*** MSTEP DEBUGGER\r\n*** Received VALID data at DEBUGGER localtime: {}'.format(datetime.now().strftime('%H:%M:%S.%f')[:-3]))
 
     print('\r\nFrom infrastructure with ID: {}'.format(infraID))
     print('From infrastructure with Name: {}\r\n'.format(infraName))
