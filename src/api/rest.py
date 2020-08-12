@@ -5,13 +5,18 @@ from datetime import datetime
 
 import json
 
+
 import src.util.consolelogs as mstep_conlogger
 import src.util.validation as mstepvalidation
 import src.controller.controller as mstepcontroller
 
-
 app = Flask(__name__)
-mstepcontroller.InitializeDB()
+
+
+def Init():
+    """Initializes the application.
+    """
+    mstepcontroller.InitializeDB()
 
 
 @app.route('/MSTEP_API/Collector', methods=['POST'])
@@ -19,7 +24,7 @@ def APIdatacollector():
     """API site receiving data from VM endpoints.
 
     Returns:
-        response: An HTTP response with a JSON string describing the result.
+        string: An HTTP response with a JSON string describing the result.
     """
 
     request_data = request
@@ -121,10 +126,22 @@ def APIdatacollector():
 
 @app.route("/MSTEP_API/Next/<infraID>/<nodeID>", methods=['GET'])
 def GetMoveToNextBP(infraID, nodeID):
-    """Returns whether the given node can move to the next breakpoint or not.
+    
+    # Check if infra and node exist and if the node can move to the next breakpoint
+    if mstepcontroller.InfraExists(infraID) == True and mstepcontroller.NodeExists(infraID, nodeID) == True and mstepcontroller.CanNodeMoveNext(infraID, nodeID):
+        return json.dumps({'success':True, 'next':True}), 200, {'ContentType':'application/json'}
+    else:
+        # 204 - No Content
+        return json.dumps({'success':False,'next':False}), 204, {'ContentType':'application/json'}
 
-    Args:
-        infraID (string): An infrastructure ID.
-        nodeID (string): A node ID.
-    """
     return ""
+
+
+# TEST - TO-DO
+# Stopping the service
+#def Stop():
+#    func = request.environ.get('werkzeug.server.shutdown')
+#    if func is None:
+#        raise RuntimeError('Not running with the Werkzeug Server')
+#    func()
+#    pass
