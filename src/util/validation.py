@@ -5,6 +5,14 @@ import json
 
 
 def ValidateJSONValues(request_data):
+    """Validates if the necessary keys have proper values.
+
+    Args:
+        request_data (request): A request.
+
+    Returns:
+        bool: True if the values are acceptable.
+    """
     
     json_data = json.loads(request_data.get_data())
 
@@ -20,15 +28,6 @@ def ValidateJSONValues(request_data):
     except TypeError:
         return False
 
-    #infra_ok = isinstance(json_data['infraData']['infraID'], str) and len(json_data['infraData']['infraID']) > 0
-    #node_ok = isinstance(json_data['nodeData']['nodeID'], str) and len(json_data['nodeData']['nodeID']) > 0
-    #bp_ok = isinstance(json_data['bpData']['bpNum'], int) and json_data['bpData']['bpNum'] > 0
-
-    #if infra_ok and node_ok and bp_ok:
-    #    return True
-    #else:
-    #    return False
-
 
 def ValidateJSON(request_data):
     """Checks if the given string is a valid JSON string.
@@ -42,8 +41,6 @@ def ValidateJSON(request_data):
     try:
         json.loads(request_data.get_data())
     except ValueError:
-        
-        # The sent JSON string is invalid
         return False
     return True
 
