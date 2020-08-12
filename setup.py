@@ -12,8 +12,5 @@ setuptools.setup(
         'src.controller',
         'src.data',
         'src.util'
-        ],
-    scripts=[
-        'bin/macro-debugger-rest'
-    ]
+        ]
 )
