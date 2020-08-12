@@ -3,15 +3,13 @@
 
 import sqlite3
 
+# TO-DO: Store actual datetime not jsut time
 
 def InitializeDB():
-    "Creates a new database if none exist, otherwise removes all previous data."
+    "Creates a new database if none exists, otherwise removes all previous data."
 
     db_conn = sqlite3.connect('src/data/mstepDB.db')
     curr = db_conn.cursor()
-
-    # If the database file exists then drop all tables,
-    # if not then create and initialize the database.
 
     # Infrastructures
     curr.execute("""DROP TABLE IF EXISTS Infras""")
@@ -48,29 +46,78 @@ def InitializeDB():
     db_conn.close()
 
 
-# Infrastructures
-# Create an infrastructure
-def RegisterInfrastucture(sql, infraID, infra_name, register_timestamp):
+### Create
+# Create infrastructure
+def RegisterInfrastucture(sql, infra_id, infra_name, registered_timestamp):
     """Creates a new infrastructrure entry.
 
     Args:
         sql (string): Represents an SQL expression.
-        infraID (string): An infrastructure ID.
+        infra_id (string): An infrastructure ID.
         infra_name (string): The infrastructures name.
-        register_timestamp (datetime): A timestamp stating the date and time of the registration.
+        registered_timestamp (datetime): A timestamp stating the date and time of the registration.
     """
 
-    infra_data = (infraID, infra_name, register_timestamp)
+    infra_tuple = (infra_id, infra_name, registered_timestamp)
 
     db_conn = sqlite3.connect('src/data/mstepDB.db', detect_types=sqlite3.PARSE_DECLTYPES)
 
     curr = db_conn.cursor()
-    curr.execute(sql, infra_data)
+    curr.execute(sql, infra_tuple)
     
     db_conn.commit()
     db_conn.close()
 
 
+# Create node
+def RegisterNode(sql, infra_id, node_id, node_name, registered_timestamp, bp_id):
+    """Creates a new node entry.
+
+    Args:
+        sql (string): Represents an SQL expression.
+        infra_id (string): An infrastructure ID.
+        node_id (string): A node id.
+        node_name (string): The name of the node.
+        registered_timestamp (datetime): A timestamp stating the date and time of the registration.
+        bp_id (int): The current breakpoint.
+    """
+
+    node_tuple = (infra_id, node_id, node_name, registered_timestamp, bp_id)
+
+    db_conn = sqlite3.connect('src/data/mstepDB.db', detect_types=sqlite3.PARSE_DECLTYPES)
+    
+    curr = db_conn.cursor()
+    curr.execute(sql, node_tuple)
+    
+    db_conn.commit()
+    db_conn.close()
+
+
+# Create breakpoint
+def RegisterBreakpoint(sql, infra_id, node_id, registered_timestamp, bp_id, node_data):
+    """Creates a new breakpoint entry.
+
+    Args:
+        sql (string): Represents an SQL expression.
+        infra_id (string): An infrastructure ID.
+        node_id (string): A node ID.
+        registered_timestamp (datetime): A timestamp stating the date and time of the registration.
+        bp_id (int): The current breakpoint.
+        node_data ([type]): A JSON string containing containing data about the breakpoint.
+    """
+
+    bp_tuple = (infra_id, node_id, registered_timestamp, bp_id, node_data)
+
+    db_conn = sqlite3.connect('src/data/mstepDB.db', detect_types=sqlite3.PARSE_DECLTYPES)
+
+    curr = db_conn.cursor()
+    curr.execute(sql, bp_tuple)
+    
+    db_conn.commit()
+    db_conn.close()
+
+
+### Read
 # Read all infrastructures
 def ReadInfrastructures(sql):
     """Reads the details of all infrastructures.
@@ -79,7 +126,7 @@ def ReadInfrastructures(sql):
         sql (string): Represents an SQL expression.
 
     Returns:
-        tuple: The details of the infrastructures.
+        list: The details of the infrastructures in a list.
     """
 
     db_conn = sqlite3.connect('src/data/mstepDB.db')
@@ -96,7 +143,7 @@ def ReadInfrastructures(sql):
 
 
 # Read a single infrastructure
-def ReadInfrastructure(sql, infraID):
+def ReadInfrastructure(sql, infra_tuple):
     """Reads the details of a given infrastructure.
 
     Args:
@@ -110,7 +157,7 @@ def ReadInfrastructure(sql, infraID):
     db_conn = sqlite3.connect('src/data/mstepDB.db')
 
     cur = db_conn.cursor()
-    cur.execute(sql,(infraID,))
+    cur.execute(sql, infra_tuple)
 
     result = cur.fetchall()
 
@@ -120,28 +167,17 @@ def ReadInfrastructure(sql, infraID):
     return result
 
 
-# Delete an infrastrucuture
-def DeleteInfrastucture(infra_name):
-    pass
-
-
-# Nodes
-# Create a node
-def RegisterNode(sql, infraID, nodeID, nodeName, node_reg_timestamp, bpid):
-
-    node_tuple = (infraID, nodeID, nodeName, node_reg_timestamp, bpid)
-
-    db_conn = sqlite3.connect('src/data/mstepDB.db', detect_types=sqlite3.PARSE_DECLTYPES)
-    
-    curr = db_conn.cursor()
-    curr.execute(sql, node_tuple)
-    
-    db_conn.commit()
-    db_conn.close()
-
-
 # Read all nodes
 def ReadNodes(sql):
+    """Reads the details of managed nodes.
+
+    Args:
+        sql (string): An SQL expression.
+
+    Returns:
+        list: List of nodes.
+    """
+
     db_conn = sqlite3.connect('src/data/mstepDB.db')
 
     cur = db_conn.cursor()
@@ -156,11 +192,21 @@ def ReadNodes(sql):
 
 
 # Read single node
-def ReadNode(sql, infraID, nodeID):
+def ReadNode(sql, node_tuple):
+    """Reads node(s) according to the supplied SQL statement.
+
+    Args:
+        sql (string): An SQL expression.
+        node_tuple (tuple): A set of data to be substituted into the SQL statement.
+
+    Returns:
+        list: A list of nodes.
+    """
+
     db_conn = sqlite3.connect('src/data/mstepDB.db')
 
     cur = db_conn.cursor()
-    cur.execute(sql,(infraID,nodeID,))
+    cur.execute(sql, node_tuple)
 
     result = cur.fetchall()
 
@@ -170,37 +216,16 @@ def ReadNode(sql, infraID, nodeID):
     return result
 
 
-# Update node
-def UpdateNode(sql, infraID, nodeID):
-
-    node_tuple = (infraID, nodeID)
-
-    db_conn = sqlite3.connect('src/data/mstepDB.db')
-
-    curr = db_conn.cursor()
-    curr.execute(sql, node_tuple)
-
-    db_conn.commit()
-    db_conn.close()
-
-
-# Breakpoints
-# Create
-def RegisterBreakpoint(sql, infraID, nodeID, reg_timestamp, bpNum, nodeData):
-
-    bp_tuple = (infraID, nodeID, reg_timestamp, bpNum, nodeData)
-
-    db_conn = sqlite3.connect('src/data/mstepDB.db', detect_types=sqlite3.PARSE_DECLTYPES)
-
-    curr = db_conn.cursor()
-    curr.execute(sql, bp_tuple)
-    
-    db_conn.commit()
-    db_conn.close()
-
-
-# Read all
+# Read all breakpoints
 def ReadBreakpoints(sql):
+    """Reads all breakpoints from the database.
+
+    Args:
+        sql (string): An SQL statement.
+
+    Returns:
+        list: A list of breakpoints.
+    """
 
     db_conn = sqlite3.connect('src/data/mstepDB.db')
 
@@ -216,5 +241,38 @@ def ReadBreakpoints(sql):
 
 
 # Read single
-def ReadBreakpoint(sql):
-    pass
+def ReadBreakpoint(sql, bp_tuple):
+    """Reads breakpoint(s) according to the given SQL statement.
+
+    Args:
+        sql (string): An SQL expression.
+        bp_tuple (tuple): A set of data to be substituted into the SQL statement.
+
+    Returns:
+        list: A list of breakpoints.
+    """
+
+    db_conn = sqlite3.connect('src/data/mstepDB.db')
+
+    cur = db_conn.cursor()
+    cur.execute(sql, bp_tuple)
+
+    result = cur.fetchall()
+
+    db_conn.commit()
+    db_conn.close()
+
+    return result
+
+
+# Update
+# Update node
+def UpdateNode(sql, node_tuple):
+
+    db_conn = sqlite3.connect('src/data/mstepDB.db')
+
+    curr = db_conn.cursor()
+    curr.execute(sql, node_tuple)
+
+    db_conn.commit()
+    db_conn.close()
