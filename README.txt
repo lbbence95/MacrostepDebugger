@@ -4,7 +4,9 @@ Basic macrostep based debugger with an API and CLI.
 
 Main file: src\debugger.py
 
-optional arguments:
+Usage: src\debugger.py [options]. Current directory should be the main folder.
+
+Optional arguments:
   -h, --help            show this help message and exit
   -li, --infrastructures
                         list managed infrastructures
