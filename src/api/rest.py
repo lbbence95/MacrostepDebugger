@@ -1,10 +1,9 @@
-# Represents API and CLI functions
+# Represents API functions
 
 from flask import Flask, request, jsonify
 from datetime import datetime
 
 import json
-
 
 import src.util.consolelogs as mstep_conlogger
 import src.util.validation as mstepvalidation
@@ -12,12 +11,10 @@ import src.controller.controller as mstepcontroller
 
 app = Flask(__name__)
 
-
 def Init():
     """Initializes the application.
     """
     mstepcontroller.InitializeDB()
-
 
 @app.route('/MSTEP_API/Collector', methods=['POST'])
 def APIdatacollector():
@@ -29,92 +26,94 @@ def APIdatacollector():
 
     request_data = request
 
-    infraID = request_data.get_json()['infraData']['infraID']
-    nodeID = request_data.get_json()['nodeData']['nodeID']
-    bpid = int(json.dumps(request_data.get_json()['bpData']['bpNum']))
-
-    # Check if the request contains the necessary data in the necessary format.
+    # A successful request contains a valid JSON, with necessary keys and values. The breakpoint also has to be a valid breakpoint (breakpoint number either 1 if this is 
+    # the first breakpoint, or the next if the node already exists in the infrastructure).
     successful = mstepvalidation.ValidateJSON(request_data) and mstepvalidation.ValidateNecessaryKeysExists(request_data) and mstepvalidation.ValidateJSONValues(request_data)
 
-    # Check if the node exists
-    if mstepcontroller.NodeExists(infraID, nodeID) == True:
+    infra_id, node_id, bp_id = None, None, None
 
-        # It does exist, check if its a valid next breakpoint.
-        successful = successful and mstepcontroller.IsNewBreakpointNext(infraID, nodeID, bpid)
+    ### TO-DO: refactoring, move JSON handling to controller
+    ### TO-DO: API should only validate requests then forward it to the controller
+    if successful == True:
+        infra_id = request_data.get_json()['infraData']['infraID']
+        node_id = request_data.get_json()['nodeData']['nodeID']
+        bp_id = int(json.dumps(request_data.get_json()['bpData']['bpNum']))
     else:
+        mstep_conlogger.PrintConsoleInvalidData()
+        return jsonify({'success':False, 'validJSON':False, 'description':'JSON is invalid'}), 400
 
-        # It does not exist, therefore check if the breakpoint is 1
-        successful = successful and (bpid == 1)
+    # Check if the node exists
+    if mstepcontroller.NodeExists(infra_id, node_id) == True:
+        # It does exist, check if its a valid next breakpoint.
+        successful = successful and mstepcontroller.IsNewBreakpointNext(infra_id, node_id, bp_id)
+    else:
+        # It does not exist, check if the breakpoint is 1
+        successful = successful and (bp_id == 1)
 
-    # A successful request contains a valid JSON, with necessary keys and values. The breakpoint also has to be a valid breakpoint (breakpoint number either 1 if this is 
-    # the first breakpoint, or N if the node already exists in the infrastructure.
     if successful == True:
 
         # The request is valid and contains the necessary data.
-
         mstep_conlogger.PrintConsoleRequestData(request_data)
 
         infraName = request_data.get_json()['infraData']['infraName']     
         nodeName = request_data.get_json()['nodeData']['nodeName']
+        bp_tag = request_data.get_json()['bpData']['bpTag']
 
-        if mstepcontroller.InfraExists(infraID) == False:
+        if mstepcontroller.InfraExists(infra_id) == False:
 
-            # Register the new infrastructure and the new node, along with the new breakpoint.
-                       
-            mstepcontroller.RegisterInfrastructure(infraID, infraName, datetime.now().strftime('%H:%M:%S.%f')[:-3])
-            mstepcontroller.RegisterNode(infraID, nodeID, nodeName, datetime.now().strftime('%H:%M:%S.%f')[:-3], int(json.dumps(request_data.get_json()['bpData']['bpNum'])))
-            mstepcontroller.RegisterBreakpoint(infraID, nodeID, datetime.now().strftime('%H:%M:%S.%f')[:-3], bpid, str(request_data.get_json()))
+            # Register the new infrastructure and the new node, along with the new breakpoint.                  
+            mstepcontroller.RegisterInfrastructure(infra_id, infraName, datetime.now().strftime('%H:%M:%S.%f')[:-3])
+            mstepcontroller.RegisterNode(infra_id, node_id, nodeName, datetime.now().strftime('%H:%M:%S.%f')[:-3], int(json.dumps(request_data.get_json()['bpData']['bpNum'])), request_data.remote_addr)
+            mstepcontroller.RegisterBreakpoint(infra_id, node_id, datetime.now().strftime('%H:%M:%S.%f')[:-3], bp_id, str(request_data.get_json()), bp_tag)
 
             print("*** New infrastructure added!")
             print("*** New node added!")
             print("*** New breakpoint added!")
 
             # Test
-            mstep_conlogger.PrintManagedInfras()
-            mstep_conlogger.PrintManagedNodes()
-            mstep_conlogger.PrintBreakpoints()
+            # mstep_conlogger.PrintManagedInfras()
+            # mstep_conlogger.PrintManagedNodes()
+            # mstep_conlogger.PrintBreakpoints()
 
         else:
-            if mstepcontroller.NodeExists(infraID, nodeID) == False:
+            if mstepcontroller.NodeExists(infra_id, node_id) == False:
             
                 # The infrastructure exists, but the new node does not. Register it and the new BP.
 
-                mstepcontroller.RegisterNode(infraID, nodeID, nodeName, datetime.now().strftime('%H:%M:%S.%f')[:-3], int(json.dumps(request_data.get_json()['bpData']['bpNum'])))
-                mstepcontroller.RegisterBreakpoint(infraID, nodeID, datetime.now().strftime('%H:%M:%S.%f')[:-3], bpid, str(request_data.get_json()))
+                mstepcontroller.RegisterNode(infra_id, node_id, nodeName, datetime.now().strftime('%H:%M:%S.%f')[:-3], int(json.dumps(request_data.get_json()['bpData']['bpNum'])), request_data.remote_addr)
+                mstepcontroller.RegisterBreakpoint(infra_id, node_id, datetime.now().strftime('%H:%M:%S.%f')[:-3], bp_id, str(request_data.get_json()), bp_tag)
 
                 print("*** New node added!")
                 print("*** New breakpoint added!")
 
                 # Test
-                mstep_conlogger.PrintManagedInfras()
-                mstep_conlogger.PrintManagedNodes()
-                mstep_conlogger.PrintBreakpoints()
+                # mstep_conlogger.PrintManagedInfras()
+                #mstep_conlogger.PrintManagedNodes()
+                # mstep_conlogger.PrintBreakpoints()
             else:
 
                 # The infrastructure exists, the node exists. Check if this is a new breakpoint.
                 # Register the new BP, and update the node to the retreived BP ID. Otherwise return invalid request.
 
-                if (mstepcontroller.IsNewBreakpointNext(infraID, nodeID, bpid) == True):
+                if (mstepcontroller.IsNewBreakpointNext(infra_id, node_id, bp_id) == True):
 
-                    mstepcontroller.UpdateNodeBreakpoint(infraID, nodeID)
-                    mstepcontroller.RegisterBreakpoint(infraID, nodeID, datetime.now().strftime('%H:%M:%S.%f')[:-3], bpid, str(request_data.get_json()))
+                    mstepcontroller.UpdateNodeBreakpoint(infra_id, node_id)
+                    mstepcontroller.RegisterBreakpoint(infra_id, node_id, datetime.now().strftime('%H:%M:%S.%f')[:-3], bp_id, str(request_data.get_json()), bp_tag)
 
                     print("*** New breakpoint added!")
 
                     # Test
-                    mstep_conlogger.PrintManagedInfras()
-                    mstep_conlogger.PrintManagedNodes()
-                    mstep_conlogger.PrintBreakpoints()
+                    # mstep_conlogger.PrintManagedInfras()
+                    # mstep_conlogger.PrintManagedNodes()
+                    # mstep_conlogger.PrintBreakpoints()
 
                 else:
                     mstep_conlogger.PrintConsoleInvalidData()
 
                     return jsonify({'success':False, 'validJSON':False, 'description':'JSON is invalid'}), 400
 
-
         return jsonify({'success':True, 'validJSON':True, 'description':'JSON is valid'}), 200
         # Alternative: return json.dumps({'success':True}), 200, {'ContentType':'application/json'}
-
     else:
 
         # The request was invalid
@@ -122,7 +121,6 @@ def APIdatacollector():
         mstep_conlogger.PrintConsoleInvalidData()
 
         return jsonify({'success':False, 'validJSON':False, 'description':'JSON is invalid'}), 400
-
 
 @app.route("/MSTEP_API/Next/<infraID>/<nodeID>", methods=['GET'])
 def GetMoveToNextBP(infraID, nodeID):
@@ -136,9 +134,8 @@ def GetMoveToNextBP(infraID, nodeID):
 
     return ""
 
-
 # TEST - TO-DO
-# Stopping the service
+# Stopping the service without a route
 #def Stop():
 #    func = request.environ.get('werkzeug.server.shutdown')
 #    if func is None:
