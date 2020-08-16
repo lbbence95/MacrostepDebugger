@@ -1,9 +1,8 @@
 # Represents the database layer of the application
 
-
 import sqlite3
 
-# TO-DO: Store actual datetime not jsut time
+# TO-DO: Store actual datetime not just time
 
 def InitializeDB():
     "Creates a new database if none exists, otherwise removes all previous data."
@@ -28,6 +27,7 @@ def InitializeDB():
         nodeRegistered TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         currBP INTEGER DEFAULT 0,
         moveNext INTEGER DEFAULT 0,
+        publicIP TEXT DEFAULT 'n/a',
         PRIMARY KEY (infraID, nodeID, nodeRegistered)
     ) """)
 
@@ -39,12 +39,12 @@ def InitializeDB():
         bpRegistered TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         bpNum INTEGER,
         nodeData TEXT,
+        bpTag TEXT DEFAULT "none",
         PRIMARY KEY (infraID, nodeID, bpNum)
     )""")
 
     db_conn.commit()
     db_conn.close()
-
 
 ### Create
 # Create infrastructure
@@ -68,9 +68,8 @@ def RegisterInfrastucture(sql, infra_id, infra_name, registered_timestamp):
     db_conn.commit()
     db_conn.close()
 
-
 # Create node
-def RegisterNode(sql, infra_id, node_id, node_name, registered_timestamp, bp_id):
+def RegisterNode(sql, infra_id, node_id, node_name, registered_timestamp, bp_id, public_ip):
     """Creates a new node entry.
 
     Args:
@@ -80,9 +79,10 @@ def RegisterNode(sql, infra_id, node_id, node_name, registered_timestamp, bp_id)
         node_name (string): The name of the node.
         registered_timestamp (datetime): A timestamp stating the date and time of the registration.
         bp_id (int): The current breakpoint.
+        public_ip (string): The public IP address of the node.
     """
 
-    node_tuple = (infra_id, node_id, node_name, registered_timestamp, bp_id)
+    node_tuple = (infra_id, node_id, node_name, registered_timestamp, bp_id, public_ip)
 
     db_conn = sqlite3.connect('src/data/mstepDB.db', detect_types=sqlite3.PARSE_DECLTYPES)
     
@@ -92,9 +92,8 @@ def RegisterNode(sql, infra_id, node_id, node_name, registered_timestamp, bp_id)
     db_conn.commit()
     db_conn.close()
 
-
 # Create breakpoint
-def RegisterBreakpoint(sql, infra_id, node_id, registered_timestamp, bp_id, node_data):
+def RegisterBreakpoint(sql, infra_id, node_id, registered_timestamp, bp_id, node_data, bp_tag):
     """Creates a new breakpoint entry.
 
     Args:
@@ -103,10 +102,11 @@ def RegisterBreakpoint(sql, infra_id, node_id, registered_timestamp, bp_id, node
         node_id (string): A node ID.
         registered_timestamp (datetime): A timestamp stating the date and time of the registration.
         bp_id (int): The current breakpoint.
-        node_data ([type]): A JSON string containing containing data about the breakpoint.
+        node_data (string): A JSON string containing containing data about the breakpoint.
+        bp_tag (string): A description of the breakpoint (e.g.: tags).
     """
 
-    bp_tuple = (infra_id, node_id, registered_timestamp, bp_id, node_data)
+    bp_tuple = (infra_id, node_id, registered_timestamp, bp_id, node_data, bp_tag)
 
     db_conn = sqlite3.connect('src/data/mstepDB.db', detect_types=sqlite3.PARSE_DECLTYPES)
 
@@ -115,7 +115,6 @@ def RegisterBreakpoint(sql, infra_id, node_id, registered_timestamp, bp_id, node
     
     db_conn.commit()
     db_conn.close()
-
 
 ### Read
 # Read all infrastructures
@@ -141,7 +140,6 @@ def ReadInfrastructures(sql):
 
     return result
 
-
 # Read a single infrastructure
 def ReadInfrastructure(sql, infra_tuple):
     """Reads the details of a given infrastructure.
@@ -166,7 +164,6 @@ def ReadInfrastructure(sql, infra_tuple):
 
     return result
 
-
 # Read all nodes
 def ReadNodes(sql):
     """Reads the details of managed nodes.
@@ -189,7 +186,6 @@ def ReadNodes(sql):
     db_conn.close()
 
     return result
-
 
 # Read single node
 def ReadNode(sql, node_tuple):
@@ -215,7 +211,6 @@ def ReadNode(sql, node_tuple):
 
     return result
 
-
 # Read all breakpoints
 def ReadBreakpoints(sql):
     """Reads all breakpoints from the database.
@@ -238,7 +233,6 @@ def ReadBreakpoints(sql):
     db_conn.close()
 
     return result
-
 
 # Read single
 def ReadBreakpoint(sql, bp_tuple):
@@ -263,7 +257,6 @@ def ReadBreakpoint(sql, bp_tuple):
     db_conn.close()
 
     return result
-
 
 # Update
 # Update node
