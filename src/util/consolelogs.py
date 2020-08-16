@@ -1,34 +1,30 @@
 # Contains functions for console logging.
 
-
 from datetime import datetime
 import src.controller.repository as msteprepo
-
 
 def PrintConsoleInvalidData():
     """Prints an error message stating the received data were invalid.
     """
 
-    print('*** MSTEP DEBUGGER\r\nReceived INVALID data at DEBUGGER localtime: {}'.format(datetime.now().strftime('%H:%M:%S.%f')[:-3]))
-    print('*** End Of Report\r\n*** MSTEP DEBUGGER')
-
+    print('*** MSTEP DEBUGGER\r\n*** Received INVALID data at DEBUGGER localtime: {}'.format(datetime.now().strftime('%H:%M:%S.%f')[:-3]))
 
 def PrintConsoleRequestData(request_data):
     """Prints the received VM data to the console.
 
     Args:
-        request_data (string): The JSON string received from the VM endpoint.
+        request_data (request): A request which contains the JSON string received from the VM endpoint.
     """
 
     json_data = request_data.get_json()
-
+ 
     # Infrastructure related data
     infra_id = json_data['infraData']['infraID']
     infra_name = json_data['infraData']['infraName']
 
     # Local breakpoint related data
     bp_id = json_data['bpData']['bpNum']
-    bp_name = json_data['bpData']['bpName']
+    bp_tag = json_data['bpData']['bpTag']
 
     # Node related data
     node_publicIP = request_data.remote_addr
@@ -37,26 +33,24 @@ def PrintConsoleRequestData(request_data):
     node_data = json_data['nodeData']
 
     # Printing received information
-    print('*** MSTEP DEBUGGER\r\nReceived VALID data at DEBUGGER localtime: {}'.format(datetime.now().strftime('%H:%M:%S.%f')[:-3]))
+    print('*** MSTEP DEBUGGER\r\n*** Received VALID data at DEBUGGER localtime: {}'.format(datetime.now().strftime('%H:%M:%S.%f')[:-3]))
 
-    print('\r\nFrom infrastructure with ID: {}'.format(infra_id))
-    print('From infrastructure with Name: {}\r\n'.format(infra_name))
+    print('\r\n*** From infrastructure with ID: {}'.format(infra_id))
+    print('*** From infrastructure with Name: {}\r\n'.format(infra_name))
 
-    print('From node with ID: {}'.format(node_id))
-    print('From node with Name: {}\r\n'.format(node_name))
+    print('*** From node with ID: {}'.format(node_id))
+    print('*** From node with Name: {}\r\n'.format(node_name))
 
-    print('Local breakpoint Number: {}'.format(bp_id))
-    print('Local breakpoint description: {}\r\n'.format(bp_name))
+    print('*** Local breakpoint Number: {}'.format(bp_id))
+    print('*** Local breakpoint description: {}\r\n'.format(bp_tag))
 
-    print('Node Data:')
+    print('*** Node Data:')
 
     for dataKey in node_data:
-        print('{} is: {}'.format(dataKey, node_data[dataKey]))
+        print('*** {}: {}'.format(dataKey, node_data[dataKey]))
 
-    print('nodePublicIP is: {}'.format(node_publicIP))
-
-    print('\r\n*** End Of Report\r\n*** MSTEP DEBUGGER')
-
+    print('*** nodePublicIP: {}'.format(node_publicIP))
+    print('\r\n*** MSTEP DEBUGGER')
 
 def PrintManagedInfras():
     """Prints the details of managed infrastructures.
@@ -72,7 +66,6 @@ def PrintManagedInfras():
         for act_infra in infras:
             print('*** {} ({}) registered at {}'.format(act_infra[0], act_infra[1], act_infra[2]))
 
-
 def PrintManagedNodes():
     """Prints the details of managed nodes.
     """
@@ -84,9 +77,10 @@ def PrintManagedNodes():
     else:
         print('*** Managed nodes:')
 
+        ### TO-DO: include breakpoint tags
+
         for act_node in nodes:
             print('*** {} ({} in infrastructure {}) at breakpoint {}.'.format(act_node[1], act_node[2], act_node[0], act_node[4]))
-
 
 def PrintBreakpoints():
     """Prints the details of stored breakpoints to the console.
@@ -99,9 +93,10 @@ def PrintBreakpoints():
     else:
         print("*** Collected breakpoints:")
 
+        ### TO-DO: Print breakpoints in a mannered format
+
         for act_bp in bps:
             print('*** {}'.format(act_bp))
-
 
 def PrintInfra(infra_id):
     """Print the details of a single infrastructure.
@@ -123,9 +118,10 @@ def PrintInfra(infra_id):
 
         print('*** Nodes in infrastructure:')
 
+        ### TO-DO: print last breakpoint tags (repo 'getLastBreakpoint' call)
+
         for act_node in nodes:
             print('*** {} ({}) at breakpoint {}.'.format(act_node[1], act_node[2], act_node[4]))
-
 
 def PrintNode(infra_id, node_id):
     
@@ -134,22 +130,21 @@ def PrintNode(infra_id, node_id):
     if len(nodes) == 0:
         print('*** No node with ID {} exists in infrastructure with ID {}!'.format(node_id, infra_id))
     else:
-
-        print('*** Node {}'.format(node_id))
-
         for act_node in nodes:
-            print('*** {}'.format(act_node))
-        
-        # TO-DO: list breakpoints in a mannered format
+            print('\r\n*** Details for node {} ({}) in infrastructure {}:'.format(act_node[1], act_node[2], act_node[0]))
+            print('*** Node public IP: {}'.format(act_node[6]))
+            ### TO-DO: 1 - Yes, 0 - No conversion
+            print('*** Can move to next breakpoint: {}'.format(act_node[5]))
 
         bps = msteprepo.ReadBreakpoint(infra_id, node_id)
 
         print('*** Node breakpoints:')
 
+        ### TO-DO: Breakpoint history (tags)
+
         for act_bp in bps:
-            print('*** {}'.format(act_bp))
+            print('*** Reached breakpoint {} at {} (tags: {})'.format(act_bp[3], act_bp[2], act_bp[5]))
 
-
-# TO-DO: Generic error printer
+### TO-DO: Generic error printer
 def ErrorPrinter(message):
     pass
