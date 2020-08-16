@@ -5,7 +5,6 @@ import src.util.consolelogs as mstep_conlogger
 
 import argparse
 
-
 parser = argparse.ArgumentParser(description='Macrostep based debugger')
 group_basic = parser.add_mutually_exclusive_group()
 
@@ -27,10 +26,7 @@ parser.add_argument('-n','--node', type=str, metavar='', help='a node ID (Import
 
 args = parser.parse_args()
 
-
 if __name__ == "__main__":
-    """Sets Flask configuration.
-    """
 
     # -li: List infrastructures
     if args.infrastructures == True:
@@ -52,14 +48,13 @@ if __name__ == "__main__":
     elif args.infra != None and args.node != None:
 
         if msteprest.mstepcontroller.NodeExists(args.infra, args.node) == True:
-            # TO-DO: Refactoring, mstepcontroller...
+            # TO-DO: Refactoring, forward CLI request directly to the controller or to a seperate CLI handler...
             msteprest.mstepcontroller.MoveNodeToNext(args.infra, args.node)
             # TEST
             mstep_conlogger.PrintNode(args.infra, args.node)
         else:
             mstep_conlogger.PrintInfra(args.infra)
     
-
     # -s: Start the service
     if args.start == True:
         msteprest.Init()
@@ -72,6 +67,5 @@ if __name__ == "__main__":
                     print('Invalid port!')
             except ValueError:
                 print('Invalid port!')
-
         else:
             msteprest.app.run(host = '0.0.0.0', port=5000, debug = True, threaded=True)
