@@ -1,17 +1,15 @@
 # Contains validation functions.
 
-
 import json
-
 
 def ValidateJSONValues(request_data):
     """Validates if the necessary keys have proper values.
 
     Args:
-        request_data (request): A request.
+        request_data (request): A request containing the JSON string.
 
     Returns:
-        bool: True if the values are acceptable.
+        bool: True if the values are acceptable, otherwise False.
     """
     
     json_data = json.loads(request_data.get_data())
@@ -28,12 +26,11 @@ def ValidateJSONValues(request_data):
     except TypeError:
         return False
 
-
 def ValidateJSON(request_data):
     """Checks if the given string is a valid JSON string.
 
     Args:
-        jsonData (string): A string to validate.
+        request_data (string): A request containing the JSON string.
 
     Returns:
         bool: True if the string is a valid, False if the string is an invalid JSON.
@@ -43,7 +40,6 @@ def ValidateJSON(request_data):
     except ValueError:
         return False
     return True
-
 
 def ValidateNecessaryKeysExists(request_data):
     """Checks if the JSON string contains the necessary keys.
@@ -55,14 +51,34 @@ def ValidateNecessaryKeysExists(request_data):
         bool: True if the necessary keys exist in the JSON string. Otherwise False.
     """
 
-    necessaryData = ({'infraData', 'bpData', 'nodeData'})
-    jsonData = request_data.get_json()
+    necessary_data = ({'infraData', 'bpData', 'nodeData'})
+    json_data = request_data.get_json()
 
-    if necessaryData <= set(jsonData):
+    ### TO-DO: refactoring
+    try:
+        # Infrastructure related data
+        json_data['infraData']['infraID']
+        json_data['infraData']['infraName']
+
+        # Local breakpoint related data
+        json_data['bpData']['bpNum']
+        json_data['bpData']['bpTag']
+
+        # Node related data
+        request_data.remote_addr
+        json_data['nodeData']['nodeID']
+        json_data['nodeData']['nodeName']
+        json_data['nodeData']
+
+        return True
+    except KeyError:
+        return False
+
+    if necessary_data <= set(json_data):
         if (
-            {'infraID', 'infraName'} <= set(jsonData['infraData']) and
-            {'bpNum'} <= set(jsonData['bpData']) and
-            {'nodeID', 'nodeName'} <= set(jsonData['nodeData'])
+            {'infraID', 'infraName'} <= set(json_data['infraData']) and
+            {'bpNum'} <= set(json_data['bpData']) and
+            {'nodeID', 'nodeName'} <= set(json_data['nodeData'])
         ):
            return True 
         else:
