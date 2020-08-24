@@ -1,11 +1,9 @@
 # Represents the controller module of the macrostep based debugger
 
 import src.controller.repository as msteprepo
+import datetime, json
 
-from datetime import datetime
-import json
-
-def InitializeDB():
+def Initialize():
     """Initializes a new database.
     """
     msteprepo.InitializeDB()
@@ -97,11 +95,10 @@ def ProcessJSON(public_ip, json_data):
     if InfraExists(infra_id) == False:
         # Check if the breakpoint ID is 1. Otherwise return invalid request.
         if (bp_id == 1) == True:
-            # Valid breakpoint ID.
-            # Register the new infrastructure and the new node, along with the new breakpoint.
-            msteprepo.RegisterInfrastructure(infra_id, infra_name, datetime.now().strftime('%H:%M:%S.%f')[:-3])
-            msteprepo.RegisterNode(infra_id, node_id, node_name, datetime.now().strftime('%H:%M:%S.%f')[:-3], bp_id, public_ip)
-            msteprepo.RegisterBreakpoint(infra_id, node_id, datetime.now().strftime('%H:%M:%S.%f')[:-3], bp_id, str(json_data), bp_tag)
+            # Valid breakpoint ID. Register the infrastructure, the node, and the breakpoint.
+            msteprepo.RegisterInfrastructure(infra_id, infra_name, datetime.datetime.now().strftime('%Y.%m.%d. %H:%M:%S.%f')[:-3])
+            msteprepo.RegisterNode(infra_id, node_id, node_name, datetime.datetime.now().strftime('%Y.%m.%d. %H:%M:%S.%f')[:-3], bp_id, public_ip)
+            msteprepo.RegisterBreakpoint(infra_id, node_id, datetime.datetime.now().strftime('%Y.%m.%d. %H:%M:%S.%f')[:-3], bp_id, str(json_data), bp_tag)
 
             print("*** New infrastructure added!")
             print("*** New node added!")
@@ -112,23 +109,24 @@ def ProcessJSON(public_ip, json_data):
             return (422, 'Invalid breakpoint ID.', False)
     else:
         if NodeExists(infra_id, node_id) == False:
-            # The infrastructure exists, but the new node does not. Register it and the new BP.
-            msteprepo.RegisterNode(infra_id, node_id, node_name, datetime.now().strftime('%H:%M:%S.%f')[:-3], bp_id, public_ip)
-            msteprepo.RegisterBreakpoint(infra_id, node_id, datetime.now().strftime('%H:%M:%S.%f')[:-3], bp_id, str(json_data), bp_tag)
+            # Check if the breakpoint ID is 1. Otherwise return invalid request.
+            if (bp_id == 1) == True:
+                # Valid breakpoint ID. The infrastructure exists, but the new node does not. Register the node and the new BP.
+                msteprepo.RegisterNode(infra_id, node_id, node_name, datetime.datetime.now().strftime('%Y.%m.%d. %H:%M:%S.%f')[:-3], bp_id, public_ip)
+                msteprepo.RegisterBreakpoint(infra_id, node_id, datetime.datetime.now().strftime('%Y.%m.%d. %H:%M:%S.%f')[:-3], bp_id, str(json_data), bp_tag)
 
-            print("*** New node added!")
-            print("*** New breakpoint added!")
+                print("*** New node added!")
+                print("*** New breakpoint added!")
 
-            return (200, 'Valid JSON. New node and breakpoint added.', True)
+                return (200, 'Valid JSON. New node and breakpoint added.', True)
+            else:
+                return (422, 'Invalid breakpoint ID.', False)  
         else:
             # The infrastructure and the node exists. Check if this is a valid new breakpoint.
             if IsNewBreakpointNext(infra_id, node_id, bp_id) == True:          
                 # Valid new breakpoint. Register the new BP, and update the node to the retreived BP ID.
-
-                print('Not a new infra or node, but a totally new breakpoint')
-
                 UpdateNodeBreakpoint(infra_id, node_id)
-                msteprepo.RegisterBreakpoint(infra_id, node_id, datetime.now().strftime('%H:%M:%S.%f')[:-3], bp_id, str(json_data), bp_tag)
+                msteprepo.RegisterBreakpoint(infra_id, node_id, datetime.datetime.now().strftime('%Y.%m.%d. %H:%M:%S.%f')[:-3], bp_id, str(json_data), bp_tag)
 
                 print("*** Node updated!")
                 print("*** New breakpoint added!")
