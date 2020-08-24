@@ -1,7 +1,6 @@
 # Represents API functions
 
 from flask import Flask, request, jsonify
-from datetime import datetime
 
 import json
 
@@ -9,11 +8,6 @@ import src.util.consolelogs as mstep_conlogger
 import src.controller.controller as mstepcontroller
 
 app = Flask(__name__)
-
-def Init():
-    """Initializes the application.
-    """
-    mstepcontroller.InitializeDB()
 
 @app.route('/MSTEP_API/Collector', methods=['POST'])
 def APIdatacollector():
@@ -32,22 +26,22 @@ def APIdatacollector():
 
     if valid == False:
         mstep_conlogger.PrintConsoleInvalidData()
-        return jsonify({'success':False, 'message':'Invalid JSON.', 'code':400}), 400
+        return jsonify({'success':False, 'message':'Invalid JSON.', 'code':400}), 400, {'ContentType':'application/json'}
     else:
         valid = valid and ValidateNecessaryKeysExists(request_data.get_json())
 
         if valid == False:
             mstep_conlogger.PrintConsoleInvalidData()
-            return jsonify({'success':False, 'message':'Missing or invalid JSON keys and/or values.', 'code':422}), 422
+            return jsonify({'success':False, 'message':'Missing or invalid JSON keys and/or values.', 'code':422}), 422, {'ContentType':'application/json'}
         else:
             valid = valid and ValidateJSONValues(request_data)
 
             if valid == False:
+                # TO-DO: valid (may) becomes None. Why?
                 mstep_conlogger.PrintConsoleInvalidData()
-                return jsonify({'success':False, 'message':'Missing or invalid JSON values.', 'code':422}), 422
+                return jsonify({'success':False, 'message':'Missing or invalid JSON values.', 'code':422}), 422, {'ContentType':'application/json'}
 
     if valid == True:
-
         # The request is valid and contains the necessary data. Passing JSON to controller.          
         result = mstepcontroller.ProcessJSON(request_data.remote_addr, request_data.get_json())
         if result[0] == 200:
@@ -55,12 +49,11 @@ def APIdatacollector():
         else:
             mstep_conlogger.PrintConsoleInvalidData()
 
-        # Alternative: return json.dumps({'success':True}), 200, {'ContentType':'application/json'}
-        return jsonify({'code':result[0], 'message':result[1], 'success':result[2]}), result[0]
+        return jsonify({'code':result[0], 'message':result[1], 'success':result[2]}), result[0], {'ContentType':'application/json'}
     else:
         # The request was invalid
         mstep_conlogger.PrintConsoleInvalidData()
-        return jsonify({'success':False, 'message':'Invalid JSON, invalid keys or invalid values.', 'code':400}), 400
+        return jsonify({'success':False, 'message':'Invalid JSON, invalid keys or invalid values.', 'code':400}), 400, {'ContentType':'application/json'}
 
 @app.route("/MSTEP_API/Next/<infraID>/<nodeID>", methods=['GET'])
 def GetMoveToNextBP(infraID, nodeID):
@@ -69,10 +62,7 @@ def GetMoveToNextBP(infraID, nodeID):
     if mstepcontroller.InfraExists(infraID) == True and mstepcontroller.NodeExists(infraID, nodeID) == True and mstepcontroller.CanNodeMoveNext(infraID, nodeID) == True:
         return json.dumps({'success':True, 'next':True}), 200, {'ContentType':'application/json'}
     else:
-        # 204 - No Content
         return json.dumps({'success':False,'next':False}), 204, {'ContentType':'application/json'}
-
-    return ""
 
 @app.route("/MSTEP_API/<infraID>", methods=['GET'])
 def GetInfrastructureData(infraID):
