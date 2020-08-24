@@ -1,13 +1,13 @@
 # Contains functions for console logging.
 
-from datetime import datetime
+import datetime
 import src.controller.repository as msteprepo
 
 def PrintConsoleInvalidData():
     """Prints an error message stating the received data were invalid.
     """
 
-    print('\r\n*** Received INVALID data at DEBUGGER localtime: {}'.format(datetime.now().strftime('%H:%M:%S.%f')[:-3]))
+    print('\r\n*** ({}) Received INVALID breakpoint data.'.format(datetime.datetime.now().strftime('%H:%M:%S.%f')[:-3]))
 
 def PrintConsoleRequestData(request_data):
     """Prints the received VM data to the console.
@@ -33,7 +33,7 @@ def PrintConsoleRequestData(request_data):
     node_data = json_data['nodeData']
 
     # Printing received information
-    print('\r\n*** Received VALID data at DEBUGGER localtime: {}'.format(datetime.now().strftime('%H:%M:%S.%f')[:-3]))
+    print('\r\n*** ({}) Received VALID breakpoint data.'.format(datetime.datetime.now().strftime('%H:%M:%S.%f')[:-3]))
 
     print('*** From infrastructure with ID: {}'.format(infra_id))
     print('*** From infrastructure with Name: {}'.format(infra_name))
@@ -59,12 +59,12 @@ def PrintManagedInfras():
     infras = msteprepo.ReadAllInfrasturctures()
 
     if len(infras) == 0:
-        print("*** No managed infrastuctures!")
+        print('\r\n*** ({}) No managed infrastuctures!'.format(datetime.datetime.now().strftime('%H:%M:%S.%f')[:-3]))
     else:
-        print("*** Managed infrastuctures:")
+        print('\r\n*** ({}) Managed infrastuctures:'.format(datetime.datetime.now().strftime('%H:%M:%S.%f')[:-3]))
 
         for act_infra in infras:
-            print('*** {} ({}) registered at {}'.format(act_infra[0], act_infra[1], act_infra[2]))
+            print('*** "{}" ({}) registered at {}'.format(act_infra[0], act_infra[1], act_infra[2]))
 
 def PrintManagedNodes():
     """Prints the details of managed nodes.
@@ -73,15 +73,15 @@ def PrintManagedNodes():
     nodes = msteprepo.ReadAllNodes()
 
     if len(nodes) == 0:
-        print("*** No managed nodes!")
+        print('\r\n*** ({}) No managed nodes!'.format(datetime.datetime.now().strftime('%H:%M:%S.%f')[:-3]))
     else:
-        print('*** Managed nodes:')
+        print('\r\n*** ({}) Managed nodes:'.format(datetime.datetime.now().strftime('%H:%M:%S.%f')[:-3]))
 
         for act_node in nodes:
 
             last_bp = msteprepo.ReadBreakpoint(act_node[0], act_node[1])[-1]
 
-            print('*** {} ({} in infrastructure {}) at breakpoint {} (tags: {})'.format(act_node[1], act_node[2], act_node[0], act_node[4], last_bp[5]))
+            print('*** "{}" ("{}" in infrastructure "{}") at breakpoint {} (tags: {})'.format(act_node[1], act_node[2], act_node[0], act_node[4], last_bp[5]))
 
 def PrintBreakpoints():
     """Prints the details of stored breakpoints to the console.
@@ -90,9 +90,9 @@ def PrintBreakpoints():
     bps = msteprepo.ReadBreakpoints()
 
     if len(bps) == 0:
-        print("*** No breakpoints received yet!")
+        print('\r\n*** ({}) No breakpoints received yet!'.format(datetime.datetime.now().strftime('%H:%M:%S.%f')[:-3]))
     else:
-        print("*** Collected breakpoints:")
+        print('\r\n*** ({}) Collected breakpoints:'.format(datetime.datetime.now().strftime('%H:%M:%S.%f')[:-3]))
 
         ### TO-DO: Print breakpoints in a mannered format
 
@@ -109,11 +109,11 @@ def PrintInfra(infra_id):
     infras = msteprepo.ReadInfrastructure(infra_id)
 
     if len(infras) == 0:
-        print('*** No infrastructure exists with ID {}!'.format(infra_id))
+        print('\r\n*** ({}) No infrastructure exists with ID "{}"!'.format(datetime.datetime.now().strftime('%H:%M:%S.%f')[:-3], infra_id))
     else:
 
         for act_infra in infras:
-            print('\r\n*** Details for infrastructure {} ({}) registered at {}'.format(act_infra[0], act_infra[1], act_infra[2]))
+            print('\r\n*** ({}) Details for infrastructure "{}" ({}) registered at {}.'.format(datetime.datetime.now().strftime('%H:%M:%S.%f')[:-3], act_infra[0], act_infra[1], act_infra[2]))
         
         nodes = msteprepo.ReadNodesFromInfra(infra_id)
 
@@ -123,20 +123,20 @@ def PrintInfra(infra_id):
 
             last_bp = msteprepo.ReadBreakpoint(infra_id, act_node[1])[-1]
 
-            print('*** {} ({}) at breakpoint {} (tags: {})'.format(act_node[1], act_node[2], act_node[4], last_bp[5]))
+            print('*** "{}" ("{}") at breakpoint {} (tags: {})'.format(act_node[1], act_node[2], act_node[4], last_bp[5]))
 
 def PrintNode(infra_id, node_id):
     
     nodes = msteprepo.ReadNode(infra_id, node_id)
 
     if len(nodes) == 0:
-        print('*** No node with ID {} exists in infrastructure with ID {}!'.format(node_id, infra_id))
+        print('*** ({}) No node with ID "{}" exists in infrastructure with ID "{}"!'.format(datetime.datetime.now().strftime('%H:%M:%S.%f')[:-3], node_id, infra_id))
     else:
         for act_node in nodes:
-            print('\r\n*** Details for node {} ({}) in infrastructure {}:'.format(act_node[1], act_node[2], act_node[0]))
+            print('\r\n*** ({}) Details for node "{}" ("{}") in infrastructure "{}":'.format(datetime.datetime.now().strftime('%H:%M:%S.%f')[:-3], act_node[1], act_node[2], act_node[0]))
             print('*** Node public IP: {}'.format(act_node[6]))
             ### TO-DO: 1 - Yes, 0 - No conversion
-            print('*** Can move to next breakpoint: {}'.format(act_node[5]))
+            print('*** Can move to next breakpoint: {}'.format('Yes' if act_node[5] == 1 else 'No'))
 
         bps = msteprepo.ReadBreakpoint(infra_id, node_id)
 
