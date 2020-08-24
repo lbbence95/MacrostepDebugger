@@ -39,7 +39,7 @@ def InitializeDB():
         bpRegistered TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         bpNum INTEGER,
         nodeData TEXT,
-        bpTag TEXT DEFAULT "none",
+        bpTag TEXT DEFAULT "",
         PRIMARY KEY (infraID, nodeID, bpNum)
     )""")
 
