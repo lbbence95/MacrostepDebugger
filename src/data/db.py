@@ -2,10 +2,8 @@
 
 import sqlite3
 
-# TO-DO: Store actual datetime not just time
-
 def InitializeDB():
-    "Creates a new database if none exists, otherwise removes all previous data."
+    "Creates a new database file."
 
     db_conn = sqlite3.connect('src/data/mstepDB.db')
     curr = db_conn.cursor()
@@ -49,7 +47,7 @@ def InitializeDB():
 ### Create
 # Create infrastructure
 def RegisterInfrastucture(sql, infra_id, infra_name, registered_timestamp):
-    """Creates a new infrastructrure entry.
+    """Creates a new infrastructure entry in the database.
 
     Args:
         sql (string): Represents an SQL expression.
@@ -70,7 +68,7 @@ def RegisterInfrastucture(sql, infra_id, infra_name, registered_timestamp):
 
 # Create node
 def RegisterNode(sql, infra_id, node_id, node_name, registered_timestamp, bp_id, public_ip):
-    """Creates a new node entry.
+    """Creates a new node entry in the database.
 
     Args:
         sql (string): Represents an SQL expression.
@@ -102,7 +100,7 @@ def RegisterBreakpoint(sql, infra_id, node_id, registered_timestamp, bp_id, node
         node_id (string): A node ID.
         registered_timestamp (datetime): A timestamp stating the date and time of the registration.
         bp_id (int): The current breakpoint.
-        node_data (string): A JSON string containing containing data about the breakpoint.
+        node_data (string): A JSON string containing the breakpoint.
         bp_tag (string): A description of the breakpoint (e.g.: tags).
     """
 
@@ -125,7 +123,7 @@ def ReadInfrastructures(sql):
         sql (string): Represents an SQL expression.
 
     Returns:
-        list: The details of the infrastructures in a list.
+        list: A list of infrastructures.
     """
 
     db_conn = sqlite3.connect('src/data/mstepDB.db')
@@ -146,10 +144,10 @@ def ReadInfrastructure(sql, infra_tuple):
 
     Args:
         sql (string): Represents an SQL expression.
-        infraID (string): An infrastructure ID.
+        infra_tuple (tuple): A tuple containing the details of the infrastructure.
 
     Returns:
-        tuple: The details of the given infrastructure.
+        list: A list of infrastructures.
     """
 
     db_conn = sqlite3.connect('src/data/mstepDB.db')
@@ -172,7 +170,7 @@ def ReadNodes(sql):
         sql (string): An SQL expression.
 
     Returns:
-        list: List of nodes.
+        list: A list of nodes.
     """
 
     db_conn = sqlite3.connect('src/data/mstepDB.db')
@@ -189,11 +187,11 @@ def ReadNodes(sql):
 
 # Read single node
 def ReadNode(sql, node_tuple):
-    """Reads node(s) according to the supplied SQL statement.
+    """Reads the details of a given node.
 
     Args:
         sql (string): An SQL expression.
-        node_tuple (tuple): A set of data to be substituted into the SQL statement.
+        node_tuple (tuple): A set of data to be substituted into the given SQL statement.
 
     Returns:
         list: A list of nodes.
@@ -236,7 +234,7 @@ def ReadBreakpoints(sql):
 
 # Read single
 def ReadBreakpoint(sql, bp_tuple):
-    """Reads breakpoint(s) according to the given SQL statement.
+    """Reads a single breakpoint.
 
     Args:
         sql (string): An SQL expression.
@@ -261,6 +259,12 @@ def ReadBreakpoint(sql, bp_tuple):
 # Update
 # Update node
 def UpdateNode(sql, node_tuple):
+    """Updates a given node.
+
+    Args:
+        sql (string): Represents an SQL statement.
+        node_tuple (tuple): Contains the details of the given node.
+    """
 
     db_conn = sqlite3.connect('src/data/mstepDB.db')
 
