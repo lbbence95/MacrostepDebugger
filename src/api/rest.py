@@ -21,7 +21,6 @@ def APIdatacollector():
 
     # A successful request contains a valid JSON, with necessary keys and values. The breakpoint also has to be a valid breakpoint (breakpoint number either 1 if this is 
     # the first breakpoint, or the next if the node already exists in the infrastructure).
-
     valid = ValidateJSON(request_data)
 
     if valid == False:
@@ -37,7 +36,6 @@ def APIdatacollector():
             valid = valid and ValidateJSONValues(request_data)
 
             if valid == False:
-                # TO-DO: valid (may) becomes None. Why?
                 mstep_conlogger.PrintConsoleInvalidData()
                 return jsonify({'success':False, 'message':'Missing or invalid JSON values.', 'code':422}), 422, {'ContentType':'application/json'}
 
@@ -66,16 +64,7 @@ def GetMoveToNextBP(infraID, nodeID):
 
 @app.route("/MSTEP_API/<infraID>", methods=['GET'])
 def GetInfrastructureData(infraID):
-    pass
-
-# TEST - TO-DO
-# Stopping the service without a route
-#def Stop():
-#    func = request.environ.get('werkzeug.server.shutdown')
-#    if func is None:
-#        raise RuntimeError('Not running with the Werkzeug Server')
-#    func()
-#    pass
+    return "Not implemented yet."
 
 def ValidateJSONValues(request_data):
     """Validates if the necessary keys have proper values.
@@ -138,7 +127,6 @@ def ValidateNecessaryKeysExists(json_data):
 
     necessary_data = ({'infraData', 'bpData', 'nodeData'})
 
-    ### TO-DO: refactoring, (maybe one-level JSON, not two-level JSON ?)
     try:
         # Infrastructure related data
         json_data['infraData']['infraID']
