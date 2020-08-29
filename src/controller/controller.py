@@ -27,10 +27,10 @@ def CanNodeMoveNext(infra_id, node_id):
         return False
 
 def InfraExists(infra_id):
-    """Decides if the given infrastructure is already registered.
+    """Decides if the given infrastructure already exists.
 
     Args:
-        infra_id (string): The searched infrastructure ID.
+        infra_id (string): An infrastructure ID.
 
     Returns:
         boolean: True if the infrastructure exists, False if not.
@@ -52,7 +52,7 @@ def IsNewBreakpointNext(infra_id, node_id, bp_id):
         bp_id (int): A breakpoint number.
 
     Returns:
-        bool: True or false.
+        bool: True if it is a new breakpoint, otherwise False.
     """
 
     try:
@@ -72,7 +72,7 @@ def NodeExists(infra_id, node_id):
         node_id (string): A node ID.
 
     Returns:
-        boolean: True if the node exists in the given infrastructure, False if not.
+        bool: True if the node exists in the given infrastructure, False if not.
     """
 
     nodes = msteprepo.ReadNode(infra_id, node_id)
@@ -83,7 +83,17 @@ def NodeExists(infra_id, node_id):
         return True
 
 def ProcessJSON(public_ip, json_data):
-    # return is a tupple: code, message, success
+    """Processes a JSON string and a public IP address
+
+    Args:
+        public_ip (string): An IP adress.
+        json_data (string): A JSON string.
+
+    Returns:
+        tuple: Cotnains a status code, a description message, and a success indicator.
+    """
+
+    curr_time = datetime.datetime.now().strftime('%Y.%m.%d. %H:%M:%S.%f')[:-3]
 
     infra_name = json_data['infraData']['infraName']
     infra_id = json_data['infraData']['infraID']
@@ -93,14 +103,15 @@ def ProcessJSON(public_ip, json_data):
     bp_id = int(json.dumps(json_data['bpData']['bpNum']))
 
     if InfraExists(infra_id) == False:
-        # Check if the breakpoint ID is 1. Otherwise return invalid request.
+        # Check if the breakpoint ID is 1. Otherwise return an invalid request.
         if (bp_id == 1) == True:
             # Valid breakpoint ID. Register the infrastructure, the node, and the breakpoint.
-            msteprepo.RegisterInfrastructure(infra_id, infra_name, datetime.datetime.now().strftime('%Y.%m.%d. %H:%M:%S.%f')[:-3])
-            msteprepo.RegisterNode(infra_id, node_id, node_name, datetime.datetime.now().strftime('%Y.%m.%d. %H:%M:%S.%f')[:-3], bp_id, public_ip)
-            msteprepo.RegisterBreakpoint(infra_id, node_id, datetime.datetime.now().strftime('%Y.%m.%d. %H:%M:%S.%f')[:-3], bp_id, str(json_data), bp_tag)
 
-            print("*** New infrastructure added!")
+            msteprepo.RegisterInfrastructure(infra_id, infra_name, curr_time)
+            msteprepo.RegisterNode(infra_id, node_id, node_name, curr_time, bp_id, public_ip)
+            msteprepo.RegisterBreakpoint(infra_id, node_id, curr_time, bp_id, str(json_data), bp_tag)
+
+            print("\r\n*** New infrastructure added!")
             print("*** New node added!")
             print("*** New breakpoint added!")
 
@@ -111,11 +122,10 @@ def ProcessJSON(public_ip, json_data):
         if NodeExists(infra_id, node_id) == False:
             # Check if the breakpoint ID is 1. Otherwise return invalid request.
             if (bp_id == 1) == True:
-                # Valid breakpoint ID. The infrastructure exists, but the new node does not. Register the node and the new BP.
-                msteprepo.RegisterNode(infra_id, node_id, node_name, datetime.datetime.now().strftime('%Y.%m.%d. %H:%M:%S.%f')[:-3], bp_id, public_ip)
-                msteprepo.RegisterBreakpoint(infra_id, node_id, datetime.datetime.now().strftime('%Y.%m.%d. %H:%M:%S.%f')[:-3], bp_id, str(json_data), bp_tag)
+                msteprepo.RegisterNode(infra_id, node_id, node_name, curr_time, bp_id, public_ip)
+                msteprepo.RegisterBreakpoint(infra_id, node_id, curr_time, bp_id, str(json_data), bp_tag)
 
-                print("*** New node added!")
+                print("\r\n*** New node added!")
                 print("*** New breakpoint added!")
 
                 return (200, 'Valid JSON. New node and breakpoint added.', True)
@@ -125,10 +135,10 @@ def ProcessJSON(public_ip, json_data):
             # The infrastructure and the node exists. Check if this is a valid new breakpoint.
             if IsNewBreakpointNext(infra_id, node_id, bp_id) == True:          
                 # Valid new breakpoint. Register the new BP, and update the node to the retreived BP ID.
-                UpdateNodeBreakpoint(infra_id, node_id)
-                msteprepo.RegisterBreakpoint(infra_id, node_id, datetime.datetime.now().strftime('%Y.%m.%d. %H:%M:%S.%f')[:-3], bp_id, str(json_data), bp_tag)
+                msteprepo.UpdateNodeBreakpoint(infra_id, node_id)
+                msteprepo.RegisterBreakpoint(infra_id, node_id, curr_time, bp_id, str(json_data), bp_tag)
 
-                print("*** Node updated!")
+                print("\r\n*** Node updated!")
                 print("*** New breakpoint added!")
 
                 return (200, 'Valid JSON. New breakpoint added, node status updated.', True)
@@ -136,25 +146,11 @@ def ProcessJSON(public_ip, json_data):
                 # The infrastructure and the node exists, but this is not a valid breakpoint.
                 return (422, 'Invalid breakpoint ID.', False)
 
-def UpdateNodeBreakpoint(infra_id, node_id):
-    """Updates a given node (update). This method updates the breakpoint to the next breakpoint, and updates the permission of moving to the next breakpoint to False (0).
-
-    Args:
-        infra_id (string): An infrastructure ID.
-        node_id (string): A node ID.
-    """
-
-    if (infra_id != None and infra_id != "") and (node_id != None and node_id != ""):
-        msteprepo.UpdateNodeBreakpoint(infra_id, node_id)
-    else:
-        # TO-DO: Throw some error
-        pass
-
 def MoveNodeToNext(infra_id, node_id):
-    """Updates the given nodes permission of moving to the next breakpoint to True.
+    """Permit the given node to move to the next breakpoint.
 
     Args:
-        infra_id (string): An infrastructure ID.
-        node_id (string): A node ID.
+       infra_id (string): An infrastructure ID.
+       node_id (string): A node ID.
     """
     msteprepo.UpdateSpecificNodeMoveNext(infra_id, node_id)
