@@ -4,16 +4,15 @@ import datetime
 import src.controller.repository as msteprepo
 
 def PrintConsoleInvalidData():
-    """Prints an error message stating the received data were invalid.
+    """Prints a message stating the received data were invalid.
     """
-
     print('\r\n*** ({}) Received INVALID breakpoint data.'.format(datetime.datetime.now().strftime('%H:%M:%S.%f')[:-3]))
 
 def PrintConsoleRequestData(request_data):
     """Prints the received VM data to the console.
 
     Args:
-        request_data (request): A request which contains the JSON string received from the VM endpoint.
+        request_data (request): A request containing a JSON string.
     """
 
     json_data = request_data.get_json()
@@ -49,8 +48,7 @@ def PrintConsoleRequestData(request_data):
     for dataKey in node_data:
         print('*** {}: {}'.format(dataKey, node_data[dataKey]))
 
-    print('*** nodePublicIP: {}'.format(node_publicIP))
-    print('\r\n')
+    print('*** nodePublicIP: {}\r\n'.format(node_publicIP))
 
 def PrintManagedInfras():
     """Prints the details of managed infrastructures.
@@ -78,13 +76,11 @@ def PrintManagedNodes():
         print('\r\n*** ({}) Managed nodes:'.format(datetime.datetime.now().strftime('%H:%M:%S.%f')[:-3]))
 
         for act_node in nodes:
-
             last_bp = msteprepo.ReadBreakpoint(act_node[0], act_node[1])[-1]
-
             print('*** "{}" ("{}" in infrastructure "{}") at breakpoint {} (tags: {})'.format(act_node[1], act_node[2], act_node[0], act_node[4], last_bp[5]))
 
 def PrintBreakpoints():
-    """Prints the details of stored breakpoints to the console.
+    """Prints the details of stored breakpoints.
     """
 
     bps = msteprepo.ReadBreakpoints()
@@ -94,13 +90,11 @@ def PrintBreakpoints():
     else:
         print('\r\n*** ({}) Collected breakpoints:'.format(datetime.datetime.now().strftime('%H:%M:%S.%f')[:-3]))
 
-        ### TO-DO: Print breakpoints in a mannered format
-
         for act_bp in bps:
             print('*** {}'.format(act_bp))
 
 def PrintInfra(infra_id):
-    """Print the details of a single infrastructure.
+    """Prints the details of a single infrastructure.
 
     Args:
         infra_id (string): An infrastructure ID.
@@ -120,12 +114,16 @@ def PrintInfra(infra_id):
         print('*** Nodes in infrastructure:')
 
         for act_node in nodes:
-
             last_bp = msteprepo.ReadBreakpoint(infra_id, act_node[1])[-1]
-
             print('*** "{}" ("{}") at breakpoint {} (tags: {})'.format(act_node[1], act_node[2], act_node[4], last_bp[5]))
 
 def PrintNode(infra_id, node_id):
+    """Prints the details of a single node.
+
+    Args:
+        infra_id (string): An infrastructure ID.
+        node_id (string): A node ID.
+    """
     
     nodes = msteprepo.ReadNode(infra_id, node_id)
 
@@ -135,7 +133,6 @@ def PrintNode(infra_id, node_id):
         for act_node in nodes:
             print('\r\n*** ({}) Details for node "{}" ("{}") in infrastructure "{}":'.format(datetime.datetime.now().strftime('%H:%M:%S.%f')[:-3], act_node[1], act_node[2], act_node[0]))
             print('*** Node public IP: {}'.format(act_node[6]))
-            ### TO-DO: 1 - Yes, 0 - No conversion
             print('*** Can move to next breakpoint: {}'.format('Yes' if act_node[5] == 1 else 'No'))
 
         bps = msteprepo.ReadBreakpoint(infra_id, node_id)
@@ -144,7 +141,3 @@ def PrintNode(infra_id, node_id):
 
         for act_bp in bps:
             print('*** Reached breakpoint {} at {} (tags: {})'.format(act_bp[3], act_bp[2], act_bp[5]))
-
-### TO-DO: Generic error printer
-def ErrorPrinter(message):
-    pass
