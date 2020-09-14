@@ -4,7 +4,6 @@ import src.api.rest as msteprest
 import src.util.consolelogs as mstep_conlogger
 import src.controller.controller as mstepcontroller
 import src.controller.neo4j_handler as mstepneo4j_handler
-
 import argparse
 
 parser = argparse.ArgumentParser(description='Macrostep based cloud-orchestration debugger (Prototype, 2020)')
@@ -19,15 +18,18 @@ group_basic.add_argument('-s','--start', action='store_true', help='start the ma
 parser.add_argument('-p', '--port', type=str, metavar='Portnumber', help='macrostep debugger service port (default is 5000)')
 
 # Details
-parser.add_argument('-dn','--detailsnode', type=str, metavar='NodeID', help='show details of a given node (can be used after option "-di"')
+parser.add_argument('-dn','--detailsnode', type=str, metavar='NodeID', help='show details of a given node (can be used after option "-di")')
 parser.add_argument('-di','--detailsinfra', type=str, metavar='InfraID', help='show details of a given infrastructure.')
 
 # Update
 parser.add_argument('-i', '--infra', type=str, metavar='InfraID', help='permit a node in the given infrastructure to move to the next breakpoint')
-parser.add_argument('-n','--node', type=str, metavar='NodeID', help='a node ID (can be used after option "-i"')
+parser.add_argument('-n','--node', type=str, metavar='NodeID', help='a node ID (can be used after option "-i")')
 
 # Neo4j
 group_basic.add_argument('-n4','--neo4j', type=str, metavar='InfraID', nargs='+', default=[], help="send infrastructure details to a predetermined Neo4j database")
+
+# Clear database
+group_basic.add_argument('-c','--clear', action='store_true', help="clear the debugger's internal database")
 
 args = parser.parse_args()
 
@@ -67,7 +69,12 @@ if __name__ == "__main__":
     elif len(args.neo4j) != 0:
         mstepneo4j_handler.SendData(args.neo4j)
     
-    # -s: Start the service
+    # -c: Clear database
+    elif args.clear == True:
+        mstepcontroller.ClearDatabase()
+        print("\r\n*** Database records dropped!")
+    
+    # -s: Start service
     elif args.start == True:
         mstepcontroller.Initialize()
 
