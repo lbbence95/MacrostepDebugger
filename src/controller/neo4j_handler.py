@@ -1,8 +1,9 @@
 # Module to handle Neo4j transactions.
 
-import src.controller.repository as msteprepo
-from py2neo import Database, Graph, Node, Relationship
+import src.data.repository as msteprepo
 import datetime
+
+from py2neo import Database, Graph, Node, Relationship
 from time import strftime
 
 def SendData(infra_list):
@@ -55,6 +56,7 @@ def SendData(infra_list):
             print('*** Connection error!')
             return False
 
+        # Iterate over infrastructures
         for infra_id in infras:
 
             act_infra = msteprepo.ReadInfrastructure(infra_id)[0]
@@ -65,6 +67,7 @@ def SendData(infra_list):
 
             nodes = msteprepo.ReadNodesFromInfra(act_infra[0])
 
+            # Iterate over nodes
             for act_node in nodes:
                 g_node_node = Node("Node", infra_id=act_node[0], node_id=act_node[1], node_name=act_node[2], pub_ip=act_node[6], curr_bp=act_node[4], node_reg=act_node[3])
                 infra_node_rel = Relationship(g_node_infra, "CONTAINS", g_node_node, since=act_node[3])
@@ -76,9 +79,12 @@ def SendData(infra_list):
 
                 act_bp_id = 0
                 g_node_prev_bp = None
+                time_reached_prev_bp = None
 
+                # Iterate over breakpoints
                 while act_bp_id < len(bps):
                     
+                    # Check for first breakpoint
                     if act_bp_id == 0:
                         g_node_bp = Node("Breakpoint", tags=bps[act_bp_id][5], bp_id=bps[act_bp_id][3], bp_reg=bps[act_bp_id][2])
                         node_bp_rel = Relationship(g_node_node, "REACHED", g_node_bp, reached_at=bps[act_bp_id][2])
@@ -86,24 +92,30 @@ def SendData(infra_list):
                         transact.create(g_node_bp)
                         transact.create(node_bp_rel)
                         
+                        time_reached_prev_bp = bps[act_bp_id][2]
                         g_node_prev_bp = g_node_bp
                         act_bp_id += 1
                     else:
+                        # Calculate delta time between breakpoints
+                        bp_delta_time = str(datetime.datetime.strptime(bps[act_bp_id][2], '%Y.%m.%d. %H:%M:%S.%f') - datetime.datetime.strptime(time_reached_prev_bp, '%Y.%m.%d. %H:%M:%S.%f'))[:-3]
+
                         g_node_bp = Node("Breakpoint", tags=bps[act_bp_id][5], bp_id=bps[act_bp_id][3], bp_reg=bps[act_bp_id][2])
                         node_bp_rel = Relationship(g_node_node, "REACHED", g_node_bp, reached_at=bps[act_bp_id][2])
 
                         transact.create(g_node_bp)
                         transact.create(node_bp_rel)
 
-                        bp_bp_rel = Relationship(g_node_prev_bp, "NEXT", g_node_bp, next_at=bps[act_bp_id][2])
+                        # Include delta time between breakpoints
+                        bp_bp_rel = Relationship(g_node_prev_bp, "NEXT", g_node_bp, next_at=bps[act_bp_id][2], delta_time=bp_delta_time)
 
                         transact.create(bp_bp_rel)
 
+                        time_reached_prev_bp = bps[act_bp_id][2]
                         g_node_prev_bp = g_node_bp
                         act_bp_id += 1
 
             transact.commit()
-            print('*** ({}) Transaction sent! (Infrastructure: {})'.format(datetime.datetime.now().strftime('%H:%M:%S.%f')[:-3], act_infra[0]))
+            print('*** ({}) Transaction sent! (Infrastructure: {})'.format(datetime.datetime.now().strftime('%Y.%m.%d. %H:%M:%S.%f')[:-3], act_infra[0]))
 
         return True
     else:
