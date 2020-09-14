@@ -3,7 +3,8 @@
 import sqlite3
 
 def InitializeDB():
-    "Creates a new database file."
+    """Initializes a new database file.
+    """
 
     db_conn = sqlite3.connect('src/data/mstepDB.db')
     curr = db_conn.cursor()
@@ -263,7 +264,7 @@ def UpdateNode(sql, node_tuple):
 
     Args:
         sql (string): Represents an SQL statement.
-        node_tuple (tuple): Contains the details of the given node.
+        node_tuple (tuple): A set of data to be substituted into the SQL statement.
     """
 
     db_conn = sqlite3.connect('src/data/mstepDB.db')
