@@ -1,10 +1,22 @@
 # Represents the controller module of the macrostep based debugger
 
-import src.controller.repository as msteprepo
-import datetime, json
+import src.data.repository as msteprepo
+import datetime, json, os.path
+
+from py2neo import Database, Graph, Node, Relationship
+from time import strftime
 
 def Initialize():
     """Initializes a new database.
+    """
+
+    if os.path.exists("src/data/mstepDB.db"):
+        pass
+    else:
+        msteprepo.InitializeDB()
+
+def ClearDatabase():
+    """Clear the used database.
     """
     msteprepo.InitializeDB()
 
@@ -65,7 +77,7 @@ def IsNewBreakpointNext(infra_id, node_id, bp_id):
         return False
 
 def NodeExists(infra_id, node_id):
-    """Checks if the given node within the given infrastrucutre exists or not.
+    """Checks if the given node within the given infrastructure exists or not.
 
     Args:
         infra_id (string): An infrastructure ID.
@@ -92,7 +104,6 @@ def ProcessJSON(public_ip, json_data):
     Returns:
         tuple: Cotnains a status code, a description message, and a success indicator.
     """
-
     curr_time = datetime.datetime.now().strftime('%Y.%m.%d. %H:%M:%S.%f')[:-3]
 
     infra_name = json_data['infraData']['infraName']
