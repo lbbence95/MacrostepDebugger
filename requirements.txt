@@ -19,7 +19,6 @@ Pygments==2.3.1
 pylint==2.6.0
 pyparsing==2.4.7
 pytz==2020.1
-pywin32==227
 requests==2.24.0
 six==1.15.0
 toml==0.10.1
