@@ -1,10 +1,10 @@
 # Represents the controller module of the macrostep based debugger
 
-import src.data.repository as msteprepo
-import datetime, json, os.path
-
+from src.data import repository as msteprepo
 from py2neo import Database, Graph, Node, Relationship
 from time import strftime
+
+import datetime, json, os.path
 
 def Initialize():
     """Initializes a new database.
@@ -165,3 +165,15 @@ def MoveNodeToNext(infra_id, node_id):
        node_id (string): A node ID.
     """
     msteprepo.UpdateSpecificNodeMoveNext(infra_id, node_id)
+
+def MoveAllNodesInInfraToNext(infra_id):
+    """Permit all nodes in the given infrastructure to move to the next breakpoint.
+
+    Args:
+        infra_id (string): An infrastructure ID.
+    """
+
+    infra_nodes = msteprepo.ReadNodesFromInfra(infra_id)
+
+    for act_node in infra_nodes:
+        msteprepo.UpdateSpecificNodeMoveNext(infra_id, act_node[1])
