@@ -1,9 +1,8 @@
 # Represents REST API functions
 
-import src.controller.controller as mstepcontroller
-import datetime, json
-
+from src.controller import controller as mstepcontroller
 from flask import Flask, request, jsonify
+import datetime, json
 
 app = Flask(__name__)
 
