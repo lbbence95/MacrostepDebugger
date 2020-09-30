@@ -27,7 +27,8 @@ def InitializeDB():
         currBP INTEGER DEFAULT 0,
         moveNext INTEGER DEFAULT 0,
         publicIP TEXT DEFAULT 'n/a',
-        PRIMARY KEY (infraID, nodeID, nodeRegistered)
+        PRIMARY KEY (infraID, nodeID),
+        FOREIGN KEY (infraID) REFERENCES Infras (infraID)
     ) """)
 
     # Breakpoints
@@ -39,7 +40,9 @@ def InitializeDB():
         bpNum INTEGER,
         nodeData TEXT,
         bpTag TEXT DEFAULT "",
-        PRIMARY KEY (infraID, nodeID, bpNum)
+        PRIMARY KEY (infraID, nodeID, bpNum),
+        FOREIGN KEY (infraID) REFERENCES Infras (infraID),
+        FOREIGN KEY (nodeID) REFERENCES Nodes (nodeID)
     )""")
 
     db_conn.commit()
