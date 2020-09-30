@@ -1,10 +1,10 @@
 # Module to handle Neo4j transactions.
 
-import src.data.repository as msteprepo
-import datetime
-
+from src.data import repository as msteprepo
 from py2neo import Database, Graph, Node, Relationship
 from time import strftime
+
+import datetime
 
 def SendData(infra_list):
     """Send the details of the given infrastructure(s) to the configured Neo4j database.
