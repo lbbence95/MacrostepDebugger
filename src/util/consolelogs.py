@@ -1,6 +1,6 @@
 # Contains functions for console logging.
 
-from src.data import repository as msteprepo
+from data import repository as msteprepo
 import datetime
 
 def PrintManagedInfras():
