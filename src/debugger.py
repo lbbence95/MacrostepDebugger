@@ -2,10 +2,10 @@
 
 # Represents the main file of the debugger with CLI functions
 
-from src.util import consolelogs as mstep_conlogger
-from src.api import rest as msteprest
-from src.controller import controller as mstepcontroller
-from src.controller import neo4j_handler as mstepneo4j_handler
+from util import consolelogs as mstep_conlogger
+from api import rest as msteprest
+from controller import controller as mstepcontroller
+from controller import neo4j_handler as mstepneo4j_handler
 import argparse
 
 parser = argparse.ArgumentParser(description='Macrostep based cloud-orchestration debugger (Prototype, 2020)')

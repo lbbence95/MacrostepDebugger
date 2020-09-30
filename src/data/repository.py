@@ -1,6 +1,6 @@
 # Represent often used queries
 
-from src.data import db as mstepdb
+from data import db as mstepdb
 
 def InitializeDB():
     """Creates a new database.

@@ -1,6 +1,6 @@
 # Module to handle Neo4j transactions.
 
-from src.data import repository as msteprepo
+from data import repository as msteprepo
 from py2neo import Database, Graph, Node, Relationship
 from time import strftime
 
