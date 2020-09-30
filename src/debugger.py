@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # Represents the main file of the debugger with CLI functions
 
 from src.util import consolelogs as mstep_conlogger
