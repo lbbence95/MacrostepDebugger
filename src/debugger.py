@@ -1,9 +1,9 @@
 # Represents the main file of the debugger with CLI functions
 
-import src.api.rest as msteprest
-import src.util.consolelogs as mstep_conlogger
-import src.controller.controller as mstepcontroller
-import src.controller.neo4j_handler as mstepneo4j_handler
+from src.util import consolelogs as mstep_conlogger
+from src.api import rest as msteprest
+from src.controller import controller as mstepcontroller
+from src.controller import neo4j_handler as mstepneo4j_handler
 import argparse
 
 parser = argparse.ArgumentParser(description='Macrostep based cloud-orchestration debugger (Prototype, 2020)')
@@ -55,13 +55,20 @@ if __name__ == "__main__":
     # -i and -n: Permit next breakpoint
     elif args.infra != None:
         if args.node != None:
+            # Both -i and -n
             if mstepcontroller.NodeExists(args.infra, args.node) == True:
                 mstepcontroller.MoveNodeToNext(args.infra, args.node)
                 mstep_conlogger.PrintNode(args.infra, args.node)
             else:
                 print('\r\n*** No node with ID "{}" exists in infrastructure with ID "{}"!'.format(args.node, args.infra))
         else:
-            mstep_conlogger.PrintInfra(args.infra)
+            # Only -i
+            if mstepcontroller.InfraExists(args.infra) == True:
+                mstepcontroller.MoveAllNodesInInfraToNext(args.infra)
+                mstep_conlogger.PrintInfra(args.infra)
+            else:
+                print('\r\n*** No infrastructure with ID "{}" exists!'.format(args.infra))
+
     elif args.node != None:
         print('\r\n*** Use "-n" after option "-i"!')
     
@@ -72,7 +79,7 @@ if __name__ == "__main__":
     # -c: Clear database
     elif args.clear == True:
         mstepcontroller.ClearDatabase()
-        print("\r\n*** Database records dropped!")
+        mstep_conlogger.DatabaseRecordsDroppedMessage()
     
     # -s: Start service
     elif args.start == True:
