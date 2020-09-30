@@ -1,7 +1,6 @@
 # Represents the controller module of the macrostep based debugger
 
-from src.data import repository as msteprepo
-from py2neo import Database, Graph, Node, Relationship
+from data import repository as msteprepo
 from time import strftime
 
 import datetime, json, os.path
