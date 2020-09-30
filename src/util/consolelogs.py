@@ -1,6 +1,6 @@
 # Contains functions for console logging.
 
-import src.data.repository as msteprepo
+from src.data import repository as msteprepo
 import datetime
 
 def PrintManagedInfras():
@@ -16,6 +16,8 @@ def PrintManagedInfras():
 
         for act_infra in infras:
             print('*** "{}" ({}) registered at {}'.format(act_infra[0], act_infra[1], act_infra[2]))
+    
+    print('\r\n')
 
 def PrintManagedNodes():
     """Prints the details of managed nodes.
@@ -31,6 +33,8 @@ def PrintManagedNodes():
         for act_node in nodes:
             last_bp = msteprepo.ReadBreakpoint(act_node[0], act_node[1])[-1]
             print('*** "{}" ("{}" in infrastructure "{}") at breakpoint {} (tags: {})'.format(act_node[1], act_node[2], act_node[0], act_node[4], last_bp[5]))
+    
+    print('\r\n')
 
 def PrintBreakpoints():
     """Prints the details of stored breakpoints.
@@ -43,8 +47,11 @@ def PrintBreakpoints():
     else:
         print('\r\n*** ({}) Collected breakpoints:'.format(datetime.datetime.now().strftime('%Y.%m.%d. %H:%M:%S.%f')[:-3]))
 
+        ### TO-DO: Print breakpoints in a mannered format
         for act_bp in bps:
             print('*** {}'.format(act_bp))
+    
+    print('\r\n')
 
 def PrintInfra(infra_id):
     """Prints the details of a single infrastructure.
@@ -68,7 +75,9 @@ def PrintInfra(infra_id):
 
         for act_node in nodes:
             last_bp = msteprepo.ReadBreakpoint(infra_id, act_node[1])[-1]
-            print('*** "{}" ("{}") at breakpoint {} (tags: {})'.format(act_node[1], act_node[2], act_node[4], last_bp[5]))
+            print('*** "{}" ("{}") at breakpoint {} (tags: {}), Can move next breakpoint: {}'.format(act_node[1], act_node[2], act_node[4], last_bp[5], 'Yes' if act_node[5] == 1 else 'No'))
+    
+    print('\r\n')
 
 def PrintNode(infra_id, node_id):
     """Prints the details of a single node.
@@ -94,3 +103,8 @@ def PrintNode(infra_id, node_id):
 
         for act_bp in bps:
             print('*** Reached breakpoint {} at {} (tags: {})'.format(act_bp[3], act_bp[2], act_bp[5]))
+    
+    print('\r\n')
+
+def DatabaseRecordsDroppedMessage():
+    print("\r\n*** ({}) Database records dropped!\r\n".format(datetime.datetime.now().strftime('%Y.%m.%d. %H:%M:%S.%f')[:-3]))
