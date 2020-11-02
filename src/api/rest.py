@@ -1,6 +1,7 @@
 # Represents REST API functions
 
 from controller import controller as mstepcontroller
+from controller import neo4j_handler as mstepneo4j_handler
 from flask import Flask, request, jsonify
 import datetime, json
 
@@ -40,7 +41,12 @@ def APIdatacollector():
         # The request is valid and contains the necessary data. Passing JSON to controller.          
         result = mstepcontroller.ProcessJSON(request_data.remote_addr, request_data.get_json())
         if result[0] == 200:
-            PrintConsoleRequestData(request_data) 
+            PrintConsoleRequestData(request_data)
+
+            # Request processed, check if infrastructure is tracked
+            if (mstepneo4j_handler.IsInfraTracked(request_data.get_json()['infraData']['infraID'])):
+                # Infrastructure is tracked, process global state and send next collective breakpoint
+                mstepneo4j_handler.SendCollectiveBreakpoint(request_data.get_json()['infraData']['infraID'])
         else:
             PrintConsoleInvalidData()
 
