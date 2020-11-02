@@ -45,12 +45,22 @@ def InitializeDB():
         FOREIGN KEY (nodeID) REFERENCES Nodes (nodeID)
     )""")
 
+    # Tracking table
+    curr.execute("""DROP TABLE IF EXISTS Tracking""")
+    curr.execute("""CREATE TABLE Tracking (
+        app_name TEXT NOT NULL,
+        infraID TEXT NOT NULL,
+        curr_coll_BP_ID TEXT NOT NULL,
+        PRIMARY KEY (app_name, infraID),
+        FOREIGN KEY (infraID) REFERENCES Infras (infraID)
+    )""")
+
     db_conn.commit()
     db_conn.close()
 
 ### Create
 # Create infrastructure
-def RegisterInfrastucture(sql, infra_id, infra_name, registered_timestamp):
+def RegisterInfrastructure(sql, infra_id, infra_name, registered_timestamp):
     """Creates a new infrastructure entry in the database.
 
     Args:
@@ -118,6 +128,27 @@ def RegisterBreakpoint(sql, infra_id, node_id, registered_timestamp, bp_id, node
     db_conn.commit()
     db_conn.close()
 
+# Create tracking entry
+def RegisterTrackEntry(sql, app_name, infra_id, curr_coll_BP_ID):
+    """Creates a new application-infrastructure entry.
+
+    Args:
+        sql (string): Represents an SQL expression.
+        app_name (string): An application name.
+        infra_id (string): An infrastructure ID.
+        curr_coll_BP_ID (string): The current collective breakpoints ID.
+    """
+
+    track_tuple = (app_name, infra_id, curr_coll_BP_ID)
+
+    db_conn = sqlite3.connect('src/data/mstepDB.db', detect_types=sqlite3.PARSE_DECLTYPES)
+
+    curr = db_conn.cursor()
+    curr.execute(sql, track_tuple)
+
+    db_conn.commit()
+    db_conn.close()
+
 ### Read
 # Read all infrastructures
 def ReadInfrastructures(sql):
@@ -127,7 +158,7 @@ def ReadInfrastructures(sql):
         sql (string): Represents an SQL expression.
 
     Returns:
-        list: A list of infrastructures.
+        list: A list of infrastructures (as a tuple).
     """
 
     db_conn = sqlite3.connect('src/data/mstepDB.db')
@@ -151,7 +182,7 @@ def ReadInfrastructure(sql, infra_tuple):
         infra_tuple (tuple): A tuple containing the details of the infrastructure.
 
     Returns:
-        list: A list of infrastructures.
+        list: A list of infrastructures (one element list, as a tuple).
     """
 
     db_conn = sqlite3.connect('src/data/mstepDB.db')
@@ -174,7 +205,7 @@ def ReadNodes(sql):
         sql (string): An SQL expression.
 
     Returns:
-        list: A list of nodes.
+        list: A list of nodes (as a tuple).
     """
 
     db_conn = sqlite3.connect('src/data/mstepDB.db')
@@ -198,7 +229,7 @@ def ReadNode(sql, node_tuple):
         node_tuple (tuple): A set of data to be substituted into the given SQL statement.
 
     Returns:
-        list: A list of nodes.
+        list: A list of nodes (one element list, as a tuple).
     """
 
     db_conn = sqlite3.connect('src/data/mstepDB.db')
@@ -221,7 +252,7 @@ def ReadBreakpoints(sql):
         sql (string): An SQL statement.
 
     Returns:
-        list: A list of breakpoints.
+        list: A list of breakpoints (as a tuple).
     """
 
     db_conn = sqlite3.connect('src/data/mstepDB.db')
@@ -236,7 +267,7 @@ def ReadBreakpoints(sql):
 
     return result
 
-# Read single
+# Read single breakpoint
 def ReadBreakpoint(sql, bp_tuple):
     """Reads a single breakpoint.
 
@@ -245,13 +276,36 @@ def ReadBreakpoint(sql, bp_tuple):
         bp_tuple (tuple): A set of data to be substituted into the SQL statement.
 
     Returns:
-        list: A list of breakpoints.
+        list: A list of breakpoints (one element list, as a tuple).
     """
 
     db_conn = sqlite3.connect('src/data/mstepDB.db')
 
     cur = db_conn.cursor()
     cur.execute(sql, bp_tuple)
+
+    result = cur.fetchall()
+
+    db_conn.commit()
+    db_conn.close()
+
+    return result
+
+# Read all tracking table entry
+def ReadTrackTable(sql):
+    """Reads all tracking table entry from the database.
+
+    Args:
+        sql (string): An SQL statement.
+
+    Returns:
+        list: A list of tuples.
+    """
+
+    db_conn = sqlite3.connect('src/data/mstepDB.db')
+
+    cur = db_conn.cursor()
+    cur.execute(sql)
 
     result = cur.fetchall()
 
@@ -274,6 +328,29 @@ def UpdateNode(sql, node_tuple):
 
     curr = db_conn.cursor()
     curr.execute(sql, node_tuple)
+
+    db_conn.commit()
+    db_conn.close()
+
+# Update tracking table entry
+def UpdateTrackingEntry(sql, track_tuple):
+
+    db_conn = sqlite3.connect('src/data/mstepDB.db')
+
+    curr = db_conn.cursor()
+    curr.execute(sql, track_tuple)
+
+    db_conn.commit()
+    db_conn.close()
+
+# Delete
+# Delete tracking table entry
+def RemoveTrackingEntry(sql, track_tuple):
+
+    db_conn = sqlite3.connect('src/data/mstepDB.db')
+
+    curr = db_conn.cursor()
+    curr.execute(sql, track_tuple)
 
     db_conn.commit()
     db_conn.close()
