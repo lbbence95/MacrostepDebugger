@@ -7,12 +7,12 @@ def PrintManagedInfras():
     """Prints the details of managed infrastructures.
     """
 
-    infras = msteprepo.ReadAllInfrasturctures()
+    infras = msteprepo.ReadAllInfrastructures()
 
     if len(infras) == 0:
-        print('\r\n*** ({}) No managed infrastuctures!'.format(datetime.datetime.now().strftime('%Y.%m.%d. %H:%M:%S.%f')[:-3]))
+        print('\r\n*** ({}) No managed infrastructures!'.format(datetime.datetime.now().strftime('%Y.%m.%d. %H:%M:%S.%f')[:-3]))
     else:
-        print('\r\n*** ({}) Managed infrastuctures:'.format(datetime.datetime.now().strftime('%Y.%m.%d. %H:%M:%S.%f')[:-3]))
+        print('\r\n*** ({}) Managed infrastructures:'.format(datetime.datetime.now().strftime('%Y.%m.%d. %H:%M:%S.%f')[:-3]))
 
         for act_infra in infras:
             print('*** "{}" ({}) registered at {}'.format(act_infra[0], act_infra[1], act_infra[2]))
@@ -47,7 +47,6 @@ def PrintBreakpoints():
     else:
         print('\r\n*** ({}) Collected breakpoints:'.format(datetime.datetime.now().strftime('%Y.%m.%d. %H:%M:%S.%f')[:-3]))
 
-        ### TO-DO: Print breakpoints in a mannered format
         for act_bp in bps:
             print('*** {}'.format(act_bp))
     
@@ -75,7 +74,7 @@ def PrintInfra(infra_id):
 
         for act_node in nodes:
             last_bp = msteprepo.ReadBreakpoint(infra_id, act_node[1])[-1]
-            print('*** "{}" ("{}") at breakpoint {} (tags: {}), Can move next breakpoint: {}'.format(act_node[1], act_node[2], act_node[4], last_bp[5], 'Yes' if act_node[5] == 1 else 'No'))
+            print('*** "{}" ("{}") at breakpoint {} (tags: {}), can move to next breakpoint: {}'.format(act_node[1], act_node[2], act_node[4], last_bp[5], 'Yes' if act_node[5] == 1 else 'No'))
     
     print('\r\n')
 
@@ -90,7 +89,7 @@ def PrintNode(infra_id, node_id):
     nodes = msteprepo.ReadNode(infra_id, node_id)
 
     if len(nodes) == 0:
-        print('*** ({}) No node with ID "{}" exists in infrastructure with ID "{}"!'.format(datetime.datetime.now().strftime('%Y.%m.%d. %H:%M:%S.%f')[:-3], node_id, infra_id))
+        print('\r\n*** ({}) No node with ID "{}" exists in infrastructure with ID "{}"!'.format(datetime.datetime.now().strftime('%Y.%m.%d. %H:%M:%S.%f')[:-3], node_id, infra_id))
     else:
         for act_node in nodes:
             print('\r\n*** ({}) Details for node "{}" ("{}") in infrastructure "{}":'.format(datetime.datetime.now().strftime('%Y.%m.%d. %H:%M:%S.%f')[:-3], act_node[1], act_node[2], act_node[0]))
@@ -106,5 +105,7 @@ def PrintNode(infra_id, node_id):
     
     print('\r\n')
 
+
 def DatabaseRecordsDroppedMessage():
-    print("\r\n*** ({}) Database records dropped!\r\n".format(datetime.datetime.now().strftime('%Y.%m.%d. %H:%M:%S.%f')[:-3]))
+    print('\r\n*** ({}) Database records dropped!'.format(datetime.datetime.now().strftime('%Y.%m.%d. %H:%M:%S.%f')[:-3]))
+    print('\r\n')
