@@ -3,7 +3,7 @@
 from data import db as mstepdb
 
 def InitializeDB():
-    """Creates a new database.
+    """Initializes a new database.
     """
     mstepdb.InitializeDB()
 
@@ -18,7 +18,7 @@ def RegisterInfrastructure(infra_id, infra_name, registered_timestamp):
         registered_timestamp (datetime): A timestamp indicating the time of the creation.
     """
     sql = '''INSERT INTO Infras (infraID, infraName, registered) VALUES (?,?,?)'''
-    mstepdb.RegisterInfrastucture(sql, infra_id, infra_name, registered_timestamp)
+    mstepdb.RegisterInfrastructure(sql, infra_id, infra_name, registered_timestamp)
 
 # Create node
 def RegisterNode(infra_id, node_id, node_name, registered_timestamp, bp_id, public_ip):
@@ -50,9 +50,22 @@ def RegisterBreakpoint(infra_id, node_id, registered_timestamp, bp_id, node_data
     sql = '''INSERT INTO Breakpoints (infraID, nodeID, bpRegistered, bpNum, nodeData, bpTag) VALUES (?,?,?,?,?,?)'''
     mstepdb.RegisterBreakpoint(sql, infra_id, node_id, registered_timestamp, bp_id, node_data, bp_tag)
 
+# Create tracking entry
+def RegisterTrackEntry(app_name, infra_id, curr_coll_BP_ID):
+    """Registers an application-infrastructure pair.
+
+    Args:
+        app_name (string): An application name.
+        infra_id (string): An infrastructure ID.
+        curr_coll_BP_ID (string): The current collective breakpoints ID.
+    """
+
+    sql = '''INSERT INTO Tracking (app_name, infraID, curr_coll_BP_ID) VALUES (?,?,?)'''
+    mstepdb.RegisterTrackEntry(sql, app_name, infra_id, curr_coll_BP_ID)
+
 ### Read
 # Read all infrastructures
-def ReadAllInfrasturctures():
+def ReadAllInfrastructures():
     """Read all infrastructures.
 
     Returns:
@@ -154,6 +167,29 @@ def ReadNodeBreakpoint(infra_id, node_id):
     sql = '''SELECT bpNum FROM Nodes WHERE infraID=(?) AND nodeID=(?)'''
     return mstepdb.ReadNode(sql, node_tuple)
 
+# Read all tracking table entry
+def ReadTrackTable():
+    """Read all records from the tracking table.
+
+    Returns:
+        list: A list of tuples.
+    """
+
+    sql = '''SELECT * FROM Tracking'''
+    return mstepdb.ReadTrackTable(sql)
+
+# Read a single tracking table entry
+def ReadSingleTrackEntry(infra_id):
+    result = []
+
+    tracking_entries = ReadTrackTable()
+
+    for act_pair in tracking_entries:
+        if act_pair[1] == infra_id:
+            result.append(act_pair)
+
+    return result
+
 # Update
 # Update breakpoint and node permission
 def UpdateNodeBreakpoint(infra_id, node_id):
@@ -178,3 +214,17 @@ def UpdateSpecificNodeMoveNext(infra_id, node_id):
     sql = '''UPDATE Nodes SET moveNext = 1 WHERE infraID=(?) AND nodeID=(?)'''
     node_tuple = (infra_id, node_id)
     mstepdb.UpdateNode(sql, node_tuple)
+
+def UpdateTrackTableEntryPrevBP(infra_id, curr_coll_BP_ID):
+
+    sql = '''UPDATE Tracking SET curr_coll_BP_ID = (?) WHERE infraID = (?)'''
+    track_tuple = (curr_coll_BP_ID, infra_id)
+    mstepdb.UpdateTrackingEntry(sql, track_tuple)
+
+# Delete
+# Remove infra-app pair
+def RemoveInfraApp(infra_id):
+
+    sql = '''DELETE FROM Tracking WHERE infraID = (?)'''
+    track_tuple = (infra_id,)
+    mstepdb.RemoveTrackingEntry(sql, track_tuple)
