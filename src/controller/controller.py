@@ -2,7 +2,6 @@
 
 from data import repository as msteprepo
 from time import strftime
-
 import datetime, json, os.path
 
 def Initialize():
