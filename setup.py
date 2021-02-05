@@ -1,16 +1,23 @@
-# Setup file
+#!/usr/bin/env -e python
 
-import  setuptools
+# Macrostep debugger v0.2 (2021.02.)
+
+import setuptools
 
 setuptools.setup(
-    name='macro-debugger',
-    version='0.1',
-    author='Bence Ligetfalvi & SZTAKI',
+    name='MSTEP-API',
+    version='0.2',
+    author='SZTAKI-LPDS',
     packages=[
-        'src',
-        'src.api',
-        'src.controller',
-        'src.data',
-        'src.util'
-        ]
+        'controller',
+        'data',
+        'util'
+    ],
+    scripts=[
+        'bin/debugger-app.py',
+        'bin/debugger-list.py',
+        'bin/debugger-trace.py',
+        'bin/debugger-step.py',
+        'bin/debugger-replay.py'
+    ]
 )
