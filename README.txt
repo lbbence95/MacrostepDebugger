@@ -1,12 +1,8 @@
-Bence Ligetfalvi & SZTAKI
+SZTAKI-LPDS
 
 Basic macrostep based debugger with an API and CLI.
 
-Main file: src\debugger.py
-
-Usage: src\debugger.py [options]. Current directory should be the main folder.
-
-Use option '-h' to see available siwtches and options.
+Usage: bin\[command].py [options]. Current directory should be the main folder.
 
 Important:
-neo4j_conn.cfg need to have an empty line as its last line.
+Please ensure "neo4j_conn.cfg" ends with a blank line.
