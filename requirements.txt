@@ -17,7 +17,7 @@ MarkupSafe==1.1.1
 mccabe==0.6.1
 monotonic==1.5
 neo4j-driver==1.6.2
-neotime==1.0.0
+neotime
 packaging==20.8
 pansi==2020.7.3
 prompt-toolkit==2.0.10
@@ -27,7 +27,6 @@ Pygments==2.7.4
 pylint==2.6.0
 pyparsing==2.4.7
 pytz==2020.5
-pywin32==227
 requests==2.25.1
 six==1.15.0
 toml==0.10.2
