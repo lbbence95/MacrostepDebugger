@@ -2,9 +2,9 @@
 
 #Main, debugger related CLI functions
 
-from api import rest as mstep_rest
-from controller import controller as mstep_controller
-from controller import exectree as mstep_exectree
+import api.rest as mstep_rest
+import controller.controller as mstep_controller
+import controller.exectree as mstep_exectree
 import argparse, logging
 
 #Logger setup
