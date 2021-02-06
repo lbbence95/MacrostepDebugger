@@ -2,7 +2,7 @@
 
 #CLI functions related to infrastructure and node details, list.
 
-from util import logger as mstep_logger
+import util.logger as mstep_logger
 import argparse, logging
 
 #Logger setup
