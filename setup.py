@@ -9,7 +9,7 @@ setuptools.setup(
     version='0.2',
     author='SZTAKI-LPDS',
     packages=[
-		'api',
+        'api',
         'controller',
         'data',
         'util'
