@@ -5,9 +5,9 @@
 import setuptools
 
 setuptools.setup(
-    name='MSTEP-API',
+    name='Marcrostep cloud debugger',
     version='0.2',
-    author='SZTAKI-LPDS',
+    author='ELKH SZTAKI-LPDS',
     packages=[
         'api',
         'controller',
@@ -15,10 +15,10 @@ setuptools.setup(
         'util'
     ],
     scripts=[
-        'bin/debugger-app.py',
-        'bin/debugger-list.py',
-        'bin/debugger-trace.py',
-        'bin/debugger-step.py',
-        'bin/debugger-replay.py'
+        'bin/debugger-app',
+        'bin/debugger-list',
+        'bin/debugger-trace',
+        'bin/debugger-step',
+        'bin/debugger-replay'
     ]
 )
