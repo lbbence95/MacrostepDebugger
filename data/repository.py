@@ -84,6 +84,17 @@ def Read_all_infrastructures():
 
     return mstep_db.Read_infrastructures()
 
+#Read all infrastructure IDs
+def Read_all_infrastructure_ids():
+    """Reads all infrastructure IDs
+
+    Returns:
+        list: A list of infrastructure IDs.
+    """
+
+    infra_ids = list([i[0] for i in Read_all_infrastructures()])
+    return infra_ids
+
 #Read single node
 def Read_node(infra_id, node_id):
     """Reads the details of a single node.
@@ -120,6 +131,19 @@ def Read_nodes_from_infra(infra_id):
         list: A list of nodes.
     """
     return list(filter(lambda i: i[0] == infra_id, mstep_db.Read_nodes()))
+
+#Read all node IDs from a given infrastructure
+def Read_node_ids_from_infra(infra_id):
+    """Reads all node IDs from a given infrastructure.
+
+    Args:
+        infra_id (string): An infrastructure ID.
+
+    Returns:
+        list: A list of node IDs.
+    """
+    node_ids = list([i[1] for i in Read_nodes_from_infra(infra_id)])
+    return node_ids
 
 #Read node ID from given node name in given infra
 def Read_node_id_from_node_name(infra_id, node_name):
