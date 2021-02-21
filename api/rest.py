@@ -1,6 +1,7 @@
 # Represents REST API functions
 
 from util import logger as mstep_logger
+from data import repository as mstep_repo
 from controller import controller as mstep_controller
 from controller import exectree as mstep_exectree
 from flask import  Flask, request, jsonify
@@ -89,7 +90,7 @@ def Get_step_permission(infraID, nodeID):
         return json.dumps({'success':False,'next':False}), 404, {'ContentType':'application/json'}
 
 @app.route('/infrastructures/<infra_id>/<node_id>', methods=['GET'])
-def Report_breakpoint_of_a_node(infra_id, node_id):
+def Report_breakpoints_of_a_node(infra_id, node_id):
     """Report the details of a given infrastructure and a given node.
 
     Args:
@@ -100,14 +101,14 @@ def Report_breakpoint_of_a_node(infra_id, node_id):
         JSON: A JSON structure containing all stored breakpoints of the given node.
     """
 
-    if ((mstep_controller.Infra_exists(infra_id) == True) and (mstep_controller.Node_exists(infra_id, node_id))):
-        all_breakpoint_data = mstep_controller.mstep_repo.Read_breakpoint(infra_id, node_id)
+    if ((mstep_controller.Infra_exists(infra_id) == True) and (mstep_controller.Node_exists(infra_id, node_id) == True)):
+        all_breakpoint_data = mstep_repo.Read_breakpoint(infra_id, node_id)
 
         breakpoints_dict = {}
 
         i = 0
         while i < len(all_breakpoint_data):
-            key = 'breakpoint_{}'.format(i + 1)
+            key = 'breakpoint{}'.format(i + 1)
             breakpoints_dict[key] = json.loads(all_breakpoint_data[i][4])
             i += 1
 
@@ -115,6 +116,28 @@ def Report_breakpoint_of_a_node(infra_id, node_id):
     else:
         return json.dumps({'success':False,'code':404, 'message':'Given node does not exist in the given infrastructure.'}, indent=4), 404, {'ContentType':'application/json'}
 
+@app.route('/infrastructures/', methods=['GET'])
+def List_infrastructures():
+    """Lists the currently known and/or maintained infrastructure IDs.
+
+    Returns:
+        JSON: A JSON structure containing infrastructure IDs.
+    """
+
+    return jsonify(dict(infrastructures=mstep_repo.Read_all_infrastructure_ids()))
+
+@app.route('/infrastructures/<infra_id>', methods=['GET'])
+def List_nodes_in_inrastructure(infra_id):
+    """Lists the IDs of nodes in a given infrastructure.
+
+    Args:
+        infra_id (string): An infrastructure ID.
+
+    Returns:
+        JSON: A JSON structure containing the node IDs in a given infrastructure.
+    """
+
+    return jsonify(dict(infrastructure=infra_id, nodes=mstep_repo.Read_node_ids_from_infra(infra_id)))
 
 #Helper methods and functions
 def Validate_JSON(request_data):
