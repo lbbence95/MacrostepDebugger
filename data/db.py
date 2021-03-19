@@ -1,8 +1,10 @@
 # Represents the database layer of the application
 
 import sqlite3
+import os.path
 
-db_conn = sqlite3.connect('data/mstepDB.db')
+
+db_conn = sqlite3.connect(os.path.join('data','mstepDB.db'))
 
 def Initialize_db():
     """Drops tables and initializes a new database file.
@@ -75,7 +77,7 @@ def Register_infrastructure(infra_id, infra_name, registered_timestamp):
 
     infra_tuple = (infra_id, infra_name, registered_timestamp)
 
-    db_conn = sqlite3.connect('data/mstepDB.db', detect_types=sqlite3.PARSE_DECLTYPES)
+    db_conn = sqlite3.connect(os.path.join('data','mstepDB.db'), detect_types=sqlite3.PARSE_DECLTYPES)
 
     curr = db_conn.cursor()
     curr.execute('''INSERT INTO Infras (infraID, infraName, registered) VALUES (?,?,?)''', infra_tuple)
@@ -98,7 +100,7 @@ def Register_node(infra_id, node_id, node_name, registered_timestamp, bp_id, pub
 
     node_tuple = (infra_id, node_id, node_name, registered_timestamp, bp_id, public_ip)
 
-    db_conn = sqlite3.connect('data/mstepDB.db', detect_types=sqlite3.PARSE_DECLTYPES)
+    db_conn = sqlite3.connect(os.path.join('data','mstepDB.db'), detect_types=sqlite3.PARSE_DECLTYPES)
     
     curr = db_conn.cursor()
     curr.execute('''INSERT INTO Nodes (infraID, nodeID, nodeName, nodeRegistered, currBP, publicIP) VALUES (?,?,?,?,?,?)''', node_tuple)
@@ -121,7 +123,7 @@ def Register_breakpoint(infra_id, node_id, registered_timestamp, bp_id, node_dat
 
     bp_tuple = (infra_id, node_id, registered_timestamp, bp_id, node_data, bp_tag)
 
-    db_conn = sqlite3.connect('data/mstepDB.db', detect_types=sqlite3.PARSE_DECLTYPES)
+    db_conn = sqlite3.connect(os.path.join('data','mstepDB.db'), detect_types=sqlite3.PARSE_DECLTYPES)
 
     curr = db_conn.cursor()
     curr.execute('''INSERT INTO Breakpoints (infraID, nodeID, bpRegistered, bpNum, nodeData, bpTag) VALUES (?,?,?,?,?,?)''', bp_tuple)
@@ -141,7 +143,7 @@ def Register_track_entry(app_name, infra_id, curr_coll_BP_ID):
 
     track_tuple = (app_name, infra_id, curr_coll_BP_ID)
 
-    db_conn = sqlite3.connect('data/mstepDB.db', detect_types=sqlite3.PARSE_DECLTYPES)
+    db_conn = sqlite3.connect(os.path.join('data','mstepDB.db'), detect_types=sqlite3.PARSE_DECLTYPES)
 
     curr = db_conn.cursor()
     curr.execute('''INSERT INTO Tracking (app_name, infraID, curr_coll_BP_ID) VALUES (?,?,?)''', track_tuple)
@@ -161,7 +163,7 @@ def Read_infrastructures():
         list: A list of of tuples containing infrastructure data.
     """
 
-    db_conn = sqlite3.connect('data/mstepDB.db')
+    db_conn = sqlite3.connect(os.path.join('data','mstepDB.db'))
 
     cur = db_conn.cursor()
     cur.execute('''SELECT * FROM Infras''')
@@ -181,7 +183,7 @@ def Read_nodes():
         list: A list of nodes (as a tuple).
     """
 
-    db_conn = sqlite3.connect('data/mstepDB.db')
+    db_conn = sqlite3.connect(os.path.join('data','mstepDB.db'))
 
     cur = db_conn.cursor()
     cur.execute('''SELECT * FROM Nodes''')
@@ -201,7 +203,7 @@ def Read_breakpoints():
         list: A list of tuple containing breakpoint data.
     """
 
-    db_conn = sqlite3.connect('data/mstepDB.db')
+    db_conn = sqlite3.connect(os.path.join('data','mstepDB.db'))
 
     cur = db_conn.cursor()
     cur.execute('''SELECT * FROM Breakpoints''')
@@ -221,7 +223,7 @@ def Read_track_table():
         list: A list of tuples.
     """
 
-    db_conn = sqlite3.connect('data/mstepDB.db')
+    db_conn = sqlite3.connect(os.path.join('data','mstepDB.db'))
 
     cur = db_conn.cursor()
     cur.execute('''SELECT * FROM Tracking''')
@@ -242,7 +244,7 @@ def Update_node_at_new_breakpoint(node_tuple):
         node_tuple (tuple): A set of data to be substituted into the SQL statement.
     """
 
-    db_conn = sqlite3.connect('data/mstepDB.db')
+    db_conn = sqlite3.connect(os.path.join('data','mstepDB.db'))
 
     curr = db_conn.cursor()
     curr.execute('''UPDATE Nodes SET currBP = currBP + 1, moveNext = 0 WHERE infraID=(?) AND nodeID=(?)''', node_tuple)
@@ -258,7 +260,7 @@ def Update_node_permission(node_tuple):
         node_tuple (tuple): A set of data to be substituted into the SQL statement.
     """
 
-    db_conn = sqlite3.connect('data/mstepDB.db')
+    db_conn = sqlite3.connect(os.path.join('data','mstepDB.db'))
 
     curr = db_conn.cursor()
     curr.execute('''UPDATE Nodes SET moveNext = 1 WHERE infraID=(?) AND nodeID=(?)''', node_tuple)
@@ -274,7 +276,7 @@ def Update_tracking_table_entry_current_coll_bp(track_tuple):
         track_tuple (tuple): Must contain a collective breakpoint ID, and an infrastructure ID.
     """
 
-    db_conn = sqlite3.connect('data/mstepDB.db')
+    db_conn = sqlite3.connect(os.path.join('data','mstepDB.db'))
 
     curr = db_conn.cursor()
     curr.execute('''UPDATE Tracking SET curr_coll_BP_ID = (?) WHERE infraID = (?)''', track_tuple)
@@ -291,7 +293,7 @@ def Remove_tracking_table_entry(track_tuple):
         track_tuple (tuple): A set of data to be substituted into the SQL statement.
     """
 
-    db_conn = sqlite3.connect('data/mstepDB.db')
+    db_conn = sqlite3.connect(os.path.join('data','mstepDB.db'))
 
     curr = db_conn.cursor()
     curr.execute('''DELETE FROM Tracking WHERE infraID = (?)''', track_tuple)
