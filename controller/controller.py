@@ -21,7 +21,7 @@ def Initialize():
     """Initializes a new database.
     """
 
-    if os.path.exists("data/mstepDB.db"):
+    if os.path.exists(os.path.join('data','mstepDB.db'):
         logger.info('Local database: exists.')
     else:
         logger.warning('Local database: does not exist.')

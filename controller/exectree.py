@@ -4,6 +4,7 @@ from data import repository as mstep_repo
 from py2neo import Graph, Node, Relationship, NodeMatcher, NodeMatch
 from time import strftime
 import datetime, uuid, json, logging
+import os.path
 
 #Logger setup
 logger = logging.getLogger('exectree')
@@ -240,7 +241,7 @@ def Read_connection_details():
 
     # Check config file
     try:
-        with open('controller/neo4j_conn.cfg') as f_cfg:
+        with open(os.path.join('controller','neo4j_conn.cfg')) as f_cfg:
             for line in f_cfg:
                 line = line[:-1]
                 (key, val) = line.split('=')
