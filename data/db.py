@@ -1,54 +1,146 @@
 # Represents the database layer of the application
 
-import sqlite3
-import os.path
+import logging, sqlite3, sqlalchemy
+from sqlalchemy import create_engine, Column, Integer, ForeignKey, Text, DateTime
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker, relationship
+
+#Logger setup
+logger = logging.getLogger('db')
+logger.propagate = False
+logger.setLevel(logging.INFO)
+
+console_handler = logging.StreamHandler()
+formatter = logging.Formatter('*** (%(asctime)s): %(message)s', "%Y-%m-%d %H:%M:%S")
+console_handler.setFormatter(formatter)
+
+logger.addHandler(console_handler)
 
 
-db_conn = sqlite3.connect(os.path.join('data','mstepDB.db'))
+# sqlite
+db_conn = sqlite3.connect('data/mstepDB.db')
 
+# SQLalchemy
+Base = declarative_base()
+engine = create_engine('sqlite:///data/mstepDB.db', echo=False)
+Base.metadata.create_all(bind=engine)
+Session = sessionmaker(bind=engine)
+
+#Models
+#Application
+class Application(Base):
+    __tablename__ = "Applications"
+    app_name = Column("app_name", Text, primary_key=True, nullable=False)
+    creation_date = Column("cr_date", DateTime, nullable=False)
+    infra_file = Column("infra_file", Text, nullable=False)
+    processes = Column('processes', Text, nullable=False, default="")
+    orch = Column("orch", Text, nullable=False)
+    orch_loc = Column("orch_loc", Text, nullable=False)
+    curr_coll_bp = Column('curr_coll_bp', Text, nullable=False, default="")
+    root_coll_bp = Column('root_coll_bp', Text, nullable=False, default="")
+
+    infra_instances = relationship("Infrastructure")
+
+#Infrastructure
+class Infrastructure(Base):
+    __tablename__ = "Infrastructures"
+    app_name = Column("app_name", Text, ForeignKey("Applications.app_name"), primary_key=True)
+    infra_id = Column("infra_id", Text, primary_key=True, nullable=False)
+    infra_name = Column("infra_name", Text, default="", nullable=False)
+    registration_date = Column("registered", DateTime)
+    finished = Column("finished", Integer, default=0)
+    curr_coll_bp = Column('curr_coll_bp', Text, nullable=False, default="")
+
+    nodes = relationship("Node")
+
+#Node
+class Node(Base):
+    __tablename__ = "Nodes"
+    infra_id = Column("infra_id", Text, ForeignKey("Infrastructures.infra_id"), primary_key=True)
+    node_id = Column("node_id", Text, nullable=False, primary_key=True)
+    node_name = Column("node_name", Text)
+    registered = Column("registered", DateTime)
+    curr_bp = Column("curr_bp", Integer, default=0)
+    move_next = Column("move_next", Integer, default=0)
+    public_ip = Column("public_ip", Text, default="")
+    finished = Column("finished", Integer, default=0)
+
+    breakpoints = relationship("Breakpoint")
+
+#Breakpoint
+class Breakpoint(Base):
+    __tablename__ = "Breakpoints"
+    infra_id = Column("infra_id", Text, ForeignKey("Infrastructures.infra_id"), primary_key=True)
+    node_id = Column("node_id", Text, ForeignKey("Nodes.node_id"), primary_key=True)
+    bp_reg = Column("bp_reg", DateTime)
+    bp_num = Column("bp_num", Integer, primary_key=True)
+    bp_data = Column("bp_data", Text)
+    bp_tag = Column("bp_tag", Text, default="")
+
+
+#Functions, methods
+# Initialization
 def Initialize_db():
     """Drops tables and initializes a new database file.
     """
 
     curr = db_conn.cursor()
 
+    # Application
+    curr.execute("""DROP TABLE IF EXISTS Applications""")
+    curr.execute("""CREATE TABLE Applications (
+        app_name TEXT NOT NULL PRIMARY KEY,
+        cr_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        infra_file TEXT NOT NULL,
+        processes TEXT NOT NULL DEFAULT "",
+        orch TEXT NOT NULL,
+        orch_loc TEXT NOT NULL,
+        curr_coll_bp TEXT NOT NULL DEFAULT "",
+        root_coll_bp TEXT NOT NULL DEFAULT ""
+    )""")
+
     # Infrastructures
     # An infrastructure instance is identified its: infrastructure ID (infraID). Also important data is the infrastucture name (infraName).
     # The time when it was registered is also stored (registered).
-    curr.execute("""DROP TABLE IF EXISTS Infras""")
-    curr.execute("""CREATE TABLE Infras (
-        infraID TEXT NOT NULL PRIMARY KEY,
-        infraName TEXT,
-        registered TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        ) """)
+    curr.execute("""DROP TABLE IF EXISTS Infrastructures""")
+    curr.execute("""CREATE TABLE Infrastructures (
+        app_name TEXT NOT NULL,
+        infra_id TEXT NOT NULL PRIMARY KEY,
+        infra_name TEXT NOT NULL DEFAULT "",
+        registered TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        finished INTEGER DEFAULT 0,
+        curr_coll_bp TEXT NOT NULL DEFAULT "",
+        FOREIGN KEY (app_name) REFERENCES Application (app_name)
+    ) """)
 
     # Nodes
     # Nodes currently represent virtual machines (VM).
     curr.execute("""DROP TABLE IF EXISTS Nodes""")
     curr.execute("""CREATE TABLE Nodes (
-        infraID TEXT NOT NULL,
-        nodeID TEXT NOT NULL,
-        nodeName TEXT,
-        nodeRegistered TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        currBP INTEGER DEFAULT 0,
-        moveNext INTEGER DEFAULT 0,
-        publicIP TEXT DEFAULT 'n/a',
-        PRIMARY KEY (infraID, nodeID),
-        FOREIGN KEY (infraID) REFERENCES Infras (infraID)
+        infra_id TEXT NOT NULL,
+        node_id TEXT NOT NULL,
+        node_name TEXT,
+        registered TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        curr_bp INTEGER DEFAULT 0,
+        move_next INTEGER DEFAULT 0,
+        public_ip TEXT DEFAULT "",
+        finished INTEGER DEFAULT 0,
+        PRIMARY KEY (infra_id, node_id),
+        FOREIGN KEY (infra_id) REFERENCES Infrastructure (infra_id)
     ) """)
 
     # Breakpoints
     curr.execute("""DROP TABLE IF EXISTS Breakpoints""")
     curr.execute("""CREATE TABLE Breakpoints (
-        infraID TEXT NOT NULL,
-        nodeID TEXT NOT NULL,
-        bpRegistered TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        bpNum INTEGER,
-        nodeData TEXT,
-        bpTag TEXT DEFAULT "",
-        PRIMARY KEY (infraID, nodeID, bpNum),
-        FOREIGN KEY (infraID) REFERENCES Infras (infraID),
-        FOREIGN KEY (nodeID) REFERENCES Nodes (nodeID)
+        infra_id TEXT NOT NULL,
+        node_id TEXT NOT NULL,
+        bp_reg TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        bp_num INTEGER,
+        bp_data TEXT,
+        bp_tag TEXT DEFAULT "",
+        PRIMARY KEY (infra_id, node_id, bp_num),
+        FOREIGN KEY (infra_id) REFERENCES Infrastructure (infra_id),
+        FOREIGN KEY (node_id) REFERENCES Nodes (node_id)
     )""")
 
     # Tracking table
@@ -58,245 +150,253 @@ def Initialize_db():
         infraID TEXT NOT NULL,
         curr_coll_BP_ID TEXT NOT NULL,
         PRIMARY KEY (app_name, infraID),
-        FOREIGN KEY (infraID) REFERENCES Infras (infraID)
+        FOREIGN KEY (infraID) REFERENCES Infrastructure (infraID)
     )""")
 
     db_conn.commit()
     db_conn.close()
 
-#Create
-#Create infrastructure
-def Register_infrastructure(infra_id, infra_name, registered_timestamp):
-    """Creates a new infrastructure entry in the database.
+# Create
+# Create application
+def Register_application(new_application):
+    """Creates a new application database entry.
+
+    Args:
+        new_application (Application): An application.
+    """
+
+    sql_session = Session()
+
+    try:
+        sql_session.add(new_application)
+        sql_session.commit()
+        logger.info('New application "{}" ({}) registered!'.format(new_application.app_name, new_application.orch.upper()))
+    except sqlalchemy.exc.IntegrityError:
+        logger.info('Application "{}" ({}) already registered!'.format(new_application.app_name, new_application.orch.upper()))
+    
+    sql_session.close()
+
+# Create infrastructure
+def Register_infrastructure(new_infra):
+    """Creates a new infrastructure database entry.
+
+    Args:
+        new_infra (Infrastructure): An infrastructure.
+    """
+
+    sql_session = Session()
+
+    try:
+        sql_session.add(new_infra)
+        sql_session.commit()
+        logger.info('New infrastructure "{}" ("{}") registered!'.format(new_infra.infra_id, new_infra.infra_name))
+    except sqlalchemy.exc.IntegrityError:
+        logger.info('Infrastructure "{}" already registered"'.format(new_infra.infra_id))
+    
+    sql_session.close()
+
+# Create node
+def Register_node(new_node):
+    """Creates a new node database entry.
+
+    Args:
+        new_node (Node): A node.
+    """
+
+    sql_session = Session()
+
+    try:
+        sql_session.add(new_node)
+        sql_session.commit()
+        logger.info('New node "{}/{}" registered!'.format(new_node.infra_id, new_node.node_id))
+    except sqlalchemy.exc.IntegrityError:
+        logger.info('Node "{}/{}" already registered!'.format(new_node.infra_id, new_node.node_id))
+    
+    sql_session.close()
+
+# Create breakpoint
+def Register_breakpoint(new_bp):
+    """Creates a new breakpoint database entry.
+
+    Args:
+        new_bp (Breakpoint): A breakpoint.
+    """
+
+    sql_session = Session()
+
+    try:
+        sql_session.add(new_bp)
+        sql_session.commit()
+        logger.info('New breakpoint (#{}) for node "{}/{}" registered!'.format(new_bp.bp_num, new_bp.infra_id, new_bp.node_id))
+    except sqlalchemy.exc.IntegrityError:
+        logger.info('Breakpoint #{} for node "{}/{}" already registered!'.format(new_bp.bp_num, new_bp.infra_id, new_bp.node_id))
+    
+    sql_session.close()
+
+
+# Read all application
+def Read_all_application():
+    """Reads all applications.
+
+    Returns:
+        list: A list of Applications.
+    """
+
+    sql_session = Session()
+    data = sql_session.query(Application).all()
+    sql_session.close()
+    return data
+
+# Read all infrastructure
+def Read_all_infrastructure():
+    """Reads all infrastructures.
+
+    Returns:
+        list: A list of Infrastructures.
+    """
+
+    sql_session = Session()
+    data = sql_session.query(Infrastructure).all()
+    sql_session.close()
+    return data
+
+# Read all node
+def Read_all_node():
+    """Reads all nodes.
+
+    Returns:
+        list: A list of Nodes.
+    """
+
+    sql_session = Session()
+    data = sql_session.query(Node).all()
+    sql_session.close()
+    return data
+
+# Read all breakpoint
+def Read_all_breakpoint():
+    """Reads all breakpoints.
+
+    Returns:
+        list: A list of Breakpoints.
+    """
+
+    sql_session = Session()
+    data = sql_session.query(Breakpoint).all()
+    sql_session.close()
+    return data
+
+# Update
+# Update application root collective breakpoint
+def Update_app_root_collective_breakpoint(app_name, root_id):
+    """Updates an application's root collective breakpoint.
+
+    Args:
+        app_name (string): An application name.
+        root_id (string): UUID of the new root.
+    """
+
+    sql_session = Session()
+    sql_session.query(Application).filter(Application.app_name == app_name).update({'root_coll_bp':root_id})
+    sql_session.commit()
+    sql_session.close()
+
+# Update application current collective breakpoint
+def Update_app_current_collective_breakpoint(app_name, coll_bp_id):
+    """Updates an application's current collective breakpoint.
+
+    Args:
+        app_name (string): An application name.
+        coll_bp_id (string): A collective breakpoint ID.
+    """
+
+    sql_session = Session()
+    sql_session.query(Application).filter(Application.app_name == app_name).update({'curr_coll_bp':coll_bp_id})
+    sql_session.commit()
+    sql_session.close()
+
+# Update infrastructure name
+def Update_infrastructure_name(infra_id, new_infra_name):
+    """Updates an infrastructure's name.
 
     Args:
         infra_id (string): An infrastructure ID.
-        infra_name (string): The infrastructures name.
-        registered_timestamp (datetime): A timestamp stating the date and time of the registration.
+        new_infra_name (string): An infastructure name.
     """
 
-    infra_tuple = (infra_id, infra_name, registered_timestamp)
+    sql_session = Session()
+    sql_session.query(Infrastructure).filter(Infrastructure.infra_id == infra_id).update({'infra_name':new_infra_name})
+    sql_session.commit()
+    sql_session.close()
 
-    db_conn = sqlite3.connect(os.path.join('data','mstepDB.db'), detect_types=sqlite3.PARSE_DECLTYPES)
-
-    curr = db_conn.cursor()
-    curr.execute('''INSERT INTO Infras (infraID, infraName, registered) VALUES (?,?,?)''', infra_tuple)
-    
-    db_conn.commit()
-    db_conn.close()
-
-#Create node
-def Register_node(infra_id, node_id, node_name, registered_timestamp, bp_id, public_ip):
-    """Creates a new node entry in the database.
+def Update_instance_current_collective_breakpoint(infra_id, coll_bp_id):
+    """Updates the given infrastructure's current collective breakpoint to the given collective breakpoint ID.
 
     Args:
         infra_id (string): An infrastructure ID.
-        node_id (string): A node id.
-        node_name (string): The name of the node.
-        registered_timestamp (datetime): A timestamp stating the date and time of the registration.
-        bp_id (int): The current breakpoint.
-        public_ip (string): The public IP address of the node.
+        coll_bp_id (string): A collective breakpoint ID.
     """
 
-    node_tuple = (infra_id, node_id, node_name, registered_timestamp, bp_id, public_ip)
+    sql_session = Session()
+    sql_session.query(Infrastructure).filter(Infrastructure.infra_id == infra_id).update({'curr_coll_bp':coll_bp_id})
+    sql_session.commit()
+    sql_session.close()
 
-    db_conn = sqlite3.connect(os.path.join('data','mstepDB.db'), detect_types=sqlite3.PARSE_DECLTYPES)
-    
-    curr = db_conn.cursor()
-    curr.execute('''INSERT INTO Nodes (infraID, nodeID, nodeName, nodeRegistered, currBP, publicIP) VALUES (?,?,?,?,?,?)''', node_tuple)
-    
-    db_conn.commit()
-    db_conn.close()
 
-#Create breakpoint
-def Register_breakpoint(infra_id, node_id, registered_timestamp, bp_id, node_data, bp_tag):
-    """Creates a new breakpoint entry.
+def Update_node_permission(infra_id, node_id):
+    """Updates a given node's step permission.
+
+    Args:
+        infra_id (string): An infrastructure ID.
+        node_id (string): An node ID.
+    """
+
+    sql_session = Session()
+    sql_session.query(Node).filter(Node.infra_id == infra_id, Node.node_id == node_id).update({'move_next':1})
+    sql_session.commit()
+    sql_session.close()
+
+def Update_node_current_bp_and_permission(infra_id, node_id):
+    """Updates a given nodes current breakpoint and it's permission.
+
+    Args:
+        infra_id (string): An infrastructure ID.
+        node_id (string): An node ID.
+    """
+
+    sql_session = Session()
+    sql_session.query(Node).filter(Node.infra_id == infra_id, Node.node_id == node_id).update({'move_next':0, 'curr_bp': Node.curr_bp + 1})
+    sql_session.commit()
+    sql_session.close()
+
+def Update_node_status_finished(infra_id, node_id):
+    """Updates the given node's status as finished, meaning the node has reached its last breakpoint.
 
     Args:
         infra_id (string): An infrastructure ID.
         node_id (string): A node ID.
-        registered_timestamp (datetime): A timestamp stating the date and time of the registration.
-        bp_id (int): The current breakpoint.
-        node_data (string): A JSON string containing the breakpoint.
-        bp_tag (string): A description of the breakpoint (e.g.: tags).
     """
 
-    bp_tuple = (infra_id, node_id, registered_timestamp, bp_id, node_data, bp_tag)
+    sql_session = Session()
+    sql_session.query(Node).filter(Node.infra_id == infra_id, Node.node_id == node_id).update({'finished':1})
+    sql_session.commit()
+    sql_session.close()
 
-    db_conn = sqlite3.connect(os.path.join('data','mstepDB.db'), detect_types=sqlite3.PARSE_DECLTYPES)
+    # Check if infrastucture instance has finished
+    Update_infra_status_finished(infra_id)
 
-    curr = db_conn.cursor()
-    curr.execute('''INSERT INTO Breakpoints (infraID, nodeID, bpRegistered, bpNum, nodeData, bpTag) VALUES (?,?,?,?,?,?)''', bp_tuple)
-    
-    db_conn.commit()
-    db_conn.close()
-
-#Create tracking table entry
-def Register_track_entry(app_name, infra_id, curr_coll_BP_ID):
-    """Creates a new application-infrastructure entry.
+def Update_infra_status_finished(infra_id):
+    """Updates a given infrastructure's status as finished, meaning every node has finished.
 
     Args:
-        app_name (string): An application name.
         infra_id (string): An infrastructure ID.
-        curr_coll_BP_ID (string): The current collective breakpoints ID.
     """
 
-    track_tuple = (app_name, infra_id, curr_coll_BP_ID)
+    sql_session = Session()
+    nodes = list(sql_session.query(Node).filter(Node.infra_id == infra_id, Node.finished == 0))
+    
+    if (len(nodes) == 0):
+        sql_session.query(Infrastructure).filter(Infrastructure.infra_id == infra_id).update({'finished':1})
+        sql_session.commit()
 
-    db_conn = sqlite3.connect(os.path.join('data','mstepDB.db'), detect_types=sqlite3.PARSE_DECLTYPES)
-
-    curr = db_conn.cursor()
-    curr.execute('''INSERT INTO Tracking (app_name, infraID, curr_coll_BP_ID) VALUES (?,?,?)''', track_tuple)
-
-    db_conn.commit()
-    db_conn.close()
-
-#Read
-#Read all infrastructures
-def Read_infrastructures():
-    """Reads the details of all infrastructures.
-
-    Args:
-        sql (string): Represents an SQL expression.
-
-    Returns:
-        list: A list of of tuples containing infrastructure data.
-    """
-
-    db_conn = sqlite3.connect(os.path.join('data','mstepDB.db'))
-
-    cur = db_conn.cursor()
-    cur.execute('''SELECT * FROM Infras''')
-
-    result = cur.fetchall()
-
-    db_conn.commit()
-    db_conn.close()
-
-    return result
-
-#Read all nodes
-def Read_nodes():
-    """Reads the details of managed nodes.
-
-    Returns:
-        list: A list of nodes (as a tuple).
-    """
-
-    db_conn = sqlite3.connect(os.path.join('data','mstepDB.db'))
-
-    cur = db_conn.cursor()
-    cur.execute('''SELECT * FROM Nodes''')
-
-    result = cur.fetchall()
-
-    db_conn.commit()
-    db_conn.close()
-
-    return result
-
-#Read all breakpoints
-def Read_breakpoints():
-    """Reads the details of managed nodes.
-
-    Returns:
-        list: A list of tuple containing breakpoint data.
-    """
-
-    db_conn = sqlite3.connect(os.path.join('data','mstepDB.db'))
-
-    cur = db_conn.cursor()
-    cur.execute('''SELECT * FROM Breakpoints''')
-
-    result = cur.fetchall()
-
-    db_conn.commit()
-    db_conn.close()
-
-    return result
-
-#Read all track table entry
-def Read_track_table():
-    """Reads all tracking table entry from the database.
-
-    Returns:
-        list: A list of tuples.
-    """
-
-    db_conn = sqlite3.connect(os.path.join('data','mstepDB.db'))
-
-    cur = db_conn.cursor()
-    cur.execute('''SELECT * FROM Tracking''')
-
-    result = cur.fetchall()
-
-    db_conn.commit()
-    db_conn.close()
-
-    return result
-
-#Update
-#Update node breakpoint
-def Update_node_at_new_breakpoint(node_tuple):
-    """Updates a given nodes breakpoint and.
-
-    Args:
-        node_tuple (tuple): A set of data to be substituted into the SQL statement.
-    """
-
-    db_conn = sqlite3.connect(os.path.join('data','mstepDB.db'))
-
-    curr = db_conn.cursor()
-    curr.execute('''UPDATE Nodes SET currBP = currBP + 1, moveNext = 0 WHERE infraID=(?) AND nodeID=(?)''', node_tuple)
-
-    db_conn.commit()
-    db_conn.close()
-
-#Update node permission
-def Update_node_permission(node_tuple):
-    """Updates a given node's step permission.
-
-    Args:
-        node_tuple (tuple): A set of data to be substituted into the SQL statement.
-    """
-
-    db_conn = sqlite3.connect(os.path.join('data','mstepDB.db'))
-
-    curr = db_conn.cursor()
-    curr.execute('''UPDATE Nodes SET moveNext = 1 WHERE infraID=(?) AND nodeID=(?)''', node_tuple)
-
-    db_conn.commit()
-    db_conn.close()
-
-#Update current collective breakpoint
-def Update_tracking_table_entry_current_coll_bp(track_tuple):
-    """Updates a tracking table entry's current collective breakpoint.
-
-    Args:
-        track_tuple (tuple): Must contain a collective breakpoint ID, and an infrastructure ID.
-    """
-
-    db_conn = sqlite3.connect(os.path.join('data','mstepDB.db'))
-
-    curr = db_conn.cursor()
-    curr.execute('''UPDATE Tracking SET curr_coll_BP_ID = (?) WHERE infraID = (?)''', track_tuple)
-
-    db_conn.commit()
-    db_conn.close()
-
-#Delete
-#Delete a tracking table entry
-def Remove_tracking_table_entry(track_tuple):
-    """Deletes a tracking table entry.
-
-    Args:
-        track_tuple (tuple): A set of data to be substituted into the SQL statement.
-    """
-
-    db_conn = sqlite3.connect(os.path.join('data','mstepDB.db'))
-
-    curr = db_conn.cursor()
-    curr.execute('''DELETE FROM Tracking WHERE infraID = (?)''', track_tuple)
-
-    db_conn.commit()
-    db_conn.close()
+    sql_session.close()
