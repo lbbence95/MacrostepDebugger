@@ -1,7 +1,6 @@
 # Represents logging functions
 
 from data import repository as mstep_repo
-from datetime import datetime
 import logging
 
 #Logger setup
@@ -10,24 +9,87 @@ logger.propagate = False
 logger.setLevel(logging.INFO)
 
 console_handler = logging.StreamHandler()
-formatter = logging.Formatter('*** (%(asctime)s): %(message)s')
+formatter = logging.Formatter('*** (%(asctime)s): %(message)s', "%Y-%m-%d %H:%M:%S")
 console_handler.setFormatter(formatter)
 
 logger.addHandler(console_handler)
 
+#List all applications
+def List_all_applications():
+    """Prints a list of managed/known applications.
+    """
+
+    logger.info('Listing known applications...')
+
+    applications = sorted(mstep_repo.Read_all_application(), key=lambda x: x.creation_date)
+
+    if (len(applications) == 0):
+        logger.info('No managed applications.')
+    else:
+        logger.info('Managed applications:')
+        for act_app in applications:
+            print('"{}" ("{}")'.format(act_app.app_name, act_app.orch.upper()))
+
+#List one application
+def List_one_application(app_name):
+    """Prints details for a given application.txt
+
+    Args:
+        app_name (string): An application name.
+    """
+
+    logger.info('Listing details for application "{}"...'.format(app_name))
+
+    application = mstep_repo.Read_given_application(app_name)
+
+    if (application != None):
+        print('\r\n"{}" registered at : "{}"\r\norch.: "{}", orch. URI: "{}",\r\ninfra. descriptor: "{}"\r\n\nApp. processes: {}\r\n\nRoot ID: "{}"\r\nCurr. coll. bp. ID: "{}"'
+        .format(application.app_name, application.creation_date.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3], 
+        application.orch.upper(), application.orch_loc, application.infra_file, application.processes, application.root_coll_bp, application.curr_coll_bp))
+
+        # TO-DO: list instance informations as well
+
+        infra_instances = mstep_repo.Read_all_instance_for_given_application(app_name)
+
+        print('Instances:')
+
+        if (infra_instances != None):
+            for act_instance in infra_instances:
+                print(act_instance.infra_id)
+    else:
+        logger.info('No such application.')
+
 def List_all_infras():
     """Prints a list of managed infrastructures.
     """
+
     logger.info('Listing managed infrastructures:')
 
-    infras = mstep_repo.Read_all_infrastructures()
-    if len(infras) == 0:
+    infras = sorted(mstep_repo.Read_all_infrastructure(), key=lambda x: x.app_name)
+    if (len(infras) == 0):
         logger.info('No managed infrastructures!')
     else:
         logger.info('Managed infrastructures:')
         for act_infra in infras:
-            print('*** "{}" ({}) registered at {}'.format(act_infra[0], act_infra[1], act_infra[2]))
+            print('({}) "{}" registered at {}'.format(act_infra.app_name, act_infra.infra_id, act_infra.registration_date.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]))
 
+def List_nodes_in_infra(infra_id):
+    """Lists all nodes in a given infrastructure.
+
+    Args:
+        infra_id (string): An infrastructure ID.
+    """
+
+    nodes = sorted(mstep_repo.Read_nodes_from_infra(infra_id), key=lambda x: (x.node_name, x.node_id))
+
+    if (len(nodes) == 0):
+        logger.info('No processes in infrastructure')
+    else:
+        for act_node in nodes:
+            print('"{}" ("{}"), at bp.: #{}, finished: {}, permitted: {}'.format(act_node.node_id, act_node.node_name, act_node.curr_bp,
+            'Yes' if act_node.finished == 1 else 'No', 'Yes' if act_node.move_next == 1 else 'No'))
+        
+        print('')
 
 def List_all_nodes():
     """Prints a list of managed nodes.
@@ -35,50 +97,38 @@ def List_all_nodes():
     
     logger.info('Listing managed nodes:')
 
-    nodes = mstep_repo.Read_all_nodes()
-    if len(nodes) == 0:
+    nodes = sorted(mstep_repo.Read_all_node(), key=lambda x: (x.infra_id, x.node_id))
+    if (len(nodes) == 0):
         logger.info('No managed nodes!')
     else:
         logger.info('Managed nodes:')
         for act_node in nodes:
-            last_bp = mstep_repo.Read_breakpoint(act_node[0], act_node[1])[-1]
-            print('*** "{}" ("{}" in infrastructure "{}") at breakpoint {} (tags: {})'.format(act_node[1], act_node[2], act_node[0], act_node[4], last_bp[5]))
+            last_bp = mstep_repo.Read_given_nodes_breakpoint(act_node.infra_id, act_node.node_id)[-1]
+            print('"{}"/"{}" registered at {}, at breakpoint #{} (tags: {})\r\nFinsished: {}'.
+            format(act_node.infra_id, act_node.node_id, act_node.registered.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3], act_node.curr_bp, last_bp.bp_tag, 'Yes' if act_node.finished == 1 else 'No'))
 
-def List_all_infra_app_pairs():
-    """Prints a list of currently tracked infrastructure-application pairs.
-    """
-    infra_app_pairs = mstep_repo.Read_all_trace_entry()
-
-    if (len(infra_app_pairs) == 0):
-        logger.info('No infrastructure-application pair is currently traced!')
-    else:
-        logger.info('Traced infrastructures:')
-        for act_infra_app in infra_app_pairs:
-            print('*** "{}" in application: "{}".'.format(act_infra_app[1], act_infra_app[0]))
-
-def Print_infra(infra_id):
+def Print_infrastructure_details(infra_id):
     """Prints the details of a single infrastructure.
 
     Args:
         infra_id (string): An infrastructure ID.
     """
-
-    infra = mstep_repo.Read_infrastructure(infra_id)
-
-    if len(infra) == 0:
-        print('*** No infrastructure exists with ID "{}"!'.format(infra_id))
-    else:
-        for act_infra in infra:
-            print('*** Details for infrastructure "{}" ({}) registered at {}.'.format(act_infra[0], act_infra[1], act_infra[2]))
-        
+    if (mstep_repo.Infra_exists(infra_id) == True):
+        infra = mstep_repo.Read_given_infrastructure(infra_id)
+            
+        logger.info('Details for infrastructure "{}" ({}) registered at {}.\r\n\nFinished: {}\r\nCurr. coll. bp.: "{}"\r\n'.format(
+            infra.infra_id, infra.infra_name, infra.registration_date.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3], 'Yes' if infra.finished == 1 else 'No', infra.curr_coll_bp))
+            
         nodes = mstep_repo.Read_nodes_from_infra(infra_id)
+        if (nodes != None):
+            for act_node in nodes:
+                print('"{}" ({}) at breakpoint #{}, permitted: {}, finished: {}'.format(act_node.node_id, act_node.node_name, act_node.curr_bp,
+                'Yes' if act_node.move_next == 1 else 'No',
+                'Yes' if act_node.finished == 1 else 'No'))
+    else:
+        logger.info('No such infrastructure!')
 
-        print('*** Nodes in infrastructure:')
-        for act_node in nodes:
-            last_bp = mstep_repo.Read_breakpoint(infra_id, act_node[1])[-1]
-            print('*** "{}" ("{}") at breakpoint {} (tags: {}), can move to next breakpoint: {}'.format(act_node[1], act_node[2], act_node[4], last_bp[5], 'Yes' if act_node[5] == 1 else 'No'))
-
-def Print_node(infra_id, node_id):
+def Print_node_details(infra_id, node_id):
     """Prints the details of a single node.
 
     Args:
@@ -86,22 +136,22 @@ def Print_node(infra_id, node_id):
         node_id (string): A node ID.
     """
 
-    node = mstep_repo.Read_node(infra_id, node_id)
+    node = mstep_repo.Read_given_node(infra_id, node_id)
 
-    if len(node) == 0:
-        print('*** No node with ID "{}" exists in infrastructure with ID "{}"!'.format(node_id, infra_id))
+    if (node == None):
+        logger.info('No such node.')
     else:
-        for act_node in node:
-            print('*** Node "{}" ("{}") is in infrastructure "{}"'.format(act_node[1], act_node[2], act_node[0]))
-            print('*** Node public IP: {}'.format(act_node[6]))
-            print('*** Can move to next breakpoint: {}'.format('Yes' if act_node[5] == 1 else 'No'))
+        logger.info('Details for node: "{} / {}"'.format(infra_id, node_id))
+        print('Infrastructure "{}"'.format(node.infra_id))
+        print('Permitted: {}, Finished: {}'.format('Yes' if node.move_next == 1 else 'No', 'Yes' if node.finished == 1 else 'No'))
+        print('Node public IP: "{}"'.format(node.public_ip))
 
-        bps = mstep_repo.Read_breakpoint(infra_id, node_id)
+        bps = mstep_repo.Read_given_nodes_breakpoint(infra_id, node_id)
 
-        print('*** Node breakpoints:')
+        print('\r\nNode breakpoints:')
 
         for act_bp in bps:
-            print('*** Reached breakpoint {} at {} (tags: {})'.format(act_bp[3], act_bp[2], act_bp[5]))
+            print('Breakpoint #{} reached at {} (tags: {})'.format(act_bp.bp_num, act_bp.bp_reg.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3], act_bp.bp_tag))
 
 def Print_breakpoint_info(request_data):
     """Prints the received VM data to the console.
@@ -113,17 +163,16 @@ def Print_breakpoint_info(request_data):
     json_data = request_data.get_json()
 
     # Infrastructure related data
-    infra_id = json_data['infraData']['infraID']
-    infra_name = json_data['infraData']['infraName']
-
-    # Local breakpoint related data
-    bp_tag = json_data['bpData']['bpTag']
-
-    # Node related data
+    infra_id = json_data['processData']['infraID']
+    infra_name = json_data['processData']['infraName']
+    node_id = json_data['processData']['nodeID']
+    node_name = json_data['processData']['nodeName']
+    bp_tag = json_data['processData']['bpTag']
+  
     node_publicIP = request_data.remote_addr
-    node_id = json_data['nodeData']['nodeID']
-    node_name = json_data['nodeData']['nodeName']
-    node_data = json_data['nodeData']
+    
+    # User data
+    node_data = json_data['userData']
 
     # Printing received information
     print('*** Infrastructure ID: {}'.format(infra_id))
