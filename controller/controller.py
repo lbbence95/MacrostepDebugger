@@ -29,32 +29,25 @@ def Process_app_descriptor(app_desc_file):
     # Check application descriptor file
     app_desc = os.path.join('infra_defs', app_desc_file)
     if (os.path.exists(app_desc) == True):
-        # File exists
-        # Check for proper format and keys
         app_desc_ok = False
         infra_desc_ok = False
         app_data = None
         infra_desc_file = None
 
         try:
-            # Load YAML file
             app_data = yaml.safe_load(open(app_desc))              
             
-            # Check needed keys in app descriptor
             if all (k in app_data for k in ("app_name", "orch", "orch_uri")):
                                
                 app_desc_ok = True
                 orch = mstep_orch_factory.GetOrchHandler(app_data['orch'])
 
-                # Check infra descriptor
                 # Occopus
                 if (app_data['orch'] == 'occopus'):
 
                     infra_desc_file = os.path.join('infra_defs', app_data['infra_file'])
                     logger.info('Valid application descriptor file!')
 
-                    # Check if infrastructure file is valid
-                    # TypeError if infra_desc_file is None
                     if (orch.Check_infrastructure_descriptor(infra_desc_file) == True):
                         logger.info('Valid infrastructure descriptor file!')
                         infra_desc_ok = True
@@ -76,7 +69,6 @@ def Process_app_descriptor(app_desc_file):
             logger.info('Invalid infrastructure descriptor file!')
 
         if ((app_desc_ok and infra_desc_ok) == True):
-            # Get process names from infrastructure descriptor
             app_data['processes'] = json.dumps(orch.Get_processes_from_infrastructure_descriptor(infra_desc_file))
 
             # Descriptors ok, register new app
@@ -97,19 +89,13 @@ def Start_infra_instance(app):
         str: The created application instance's (infrastructure's) ID. Otherwise an empty string ("").
     """
 
-    #TO-DO: handle connection errors
-
-    # Start infrastructure instance using appropriate orchestrator handler
     orch_handler = mstep_orch_factory.GetOrchHandler(app.orch)
 
-    # Get instance ID from orchestrator
     instance_infra_id = orch_handler.Start_infrastructure_instance(app)
 
     if (instance_infra_id != ""):
-        # Register infrastructure
         mstep_repo.Register_new_infrastructure(app.app_name, instance_infra_id)
         
-        # Check infra status, whether or not has every process reported
         orch_handler.Check_process_statuses(app, instance_infra_id)
 
         # Check if root state
@@ -216,15 +202,9 @@ def Start_automatic_debug_session(app_name):
         while (root_exhausted != True):
 
             app = mstep_repo.Read_given_application(app_name)
-
-            # TO-DO: check if execution tree is partially exhausted or not.
-            # TO-DO: select appropriate coll. bp. to continue automatic debugging from
         
             instance_id = ""
 
-            # Check if replay_pointer is empty or not.
-            # If it is, then start instance and exhaust an execution path
-            # If pointer is not empty, replay to that state.
             if  (replay_pointer == ""):
                 instance_id = Start_infra_instance(app)           
             else:

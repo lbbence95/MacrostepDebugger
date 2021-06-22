@@ -24,9 +24,6 @@ sub_group = parser.add_argument_group()
 #Option: Define new application
 exclusive_group.add_argument('-a', '--application', type=str, metavar='APP_NAME', nargs=1, help='a user given application name')
 
-#Suboption: Infrastructure desciptor file
-#sub_group.add_argument('-i','--infrafile', type=str, metavar='INFRA_DESC_FILE', nargs=1, help='an infrastructure descriptor file use by Occopus')
-
 #Argparse
 args = parser.parse_args()
 

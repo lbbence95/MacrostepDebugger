@@ -111,23 +111,17 @@ def Create_collective_breakpoint(app, app_instance, process_states):
 
     not_finished = mstep_repo.How_many_processes_havent_finished(app_instance.infra_id)
 
-    #if (app_instance.finished == 1):
     if (not_finished == 0):
-        # This is a final state
         new_node = Node("Collective_BP", app_name=app.app_name, infra_id=app_instance.infra_id, node_type="final", prev_coll_bp=app_instance.curr_coll_bp, exhausted="Yes", coll_bp_id=coll_bp_id, process_states=json.dumps(process_states))
     elif (not_finished >= 2):
-        # This is an alternative state
         new_node = Node("Collective_BP", app_name=app.app_name, infra_id=app_instance.infra_id, node_type="alternative", prev_coll_bp=app_instance.curr_coll_bp, exhausted="No", coll_bp_id=coll_bp_id, process_states=json.dumps(process_states))
     elif (not_finished == 1):
-        # This is a deterministic state
         new_node = Node("Collective_BP", app_name=app.app_name, infra_id=app_instance.infra_id, node_type="deterministic", prev_coll_bp=app_instance.curr_coll_bp, exhausted="Yes", coll_bp_id=coll_bp_id, process_states=json.dumps(process_states))
 
     transact.create(new_node)
 
-    # Create relationship between states
     prev_node = node_matcher.match("Collective_BP").where("_.app_name =~ '{}' AND _.coll_bp_id =~ '{}'".format(app.app_name, app_instance.curr_coll_bp)).first()  
     
-    # Determine which process was stepped
     prev_proc_states = json.loads(prev_node['process_states'])
     curr_proc_states = json.loads(new_node['process_states'])
     process_stepped = ""
@@ -146,7 +140,6 @@ def Create_collective_breakpoint(app, app_instance, process_states):
     coll_bp_rel = Relationship(prev_node, "MACROSTEP", new_node, app_name=app.app_name, infra_id=app_instance.infra_id, process_stepped="{}[{}]".format(process_stepped, i + 1))
     transact.create(coll_bp_rel)
 
-    # Commit
     transact.commit()
     
     return coll_bp_id
@@ -181,9 +174,7 @@ def Get_closest_non_exhausted_parent(app, curr_bp_id, final_process_states):
     # Go backwards in tree until a non-exhausted node is found
     while (not_exhausted != True):
 
-        # If root is reached, no need to go backwards on path
         if (curr_coll_bp['node_type'] == "root"):
-            # If root is exhausted return empty string, signaling
             if (curr_coll_bp['exhausted'] == "Yes"):
                 return ""
         else:
@@ -223,15 +214,12 @@ def Update_closest_alternative_coll_bp(app, curr_bp_id, final_process_states):
         if (curr_coll_bp['node_type'] == "root" or curr_coll_bp['node_type'] == "alternative"):
             is_root_or_alt = True
         
-    # Get alternative coll. bp. process states and final process states to which later compare against
     alternative_processes = json.loads(curr_coll_bp['process_states'])
     final_state_processes = json.loads(json.dumps(final_process_states))
 
-    # Get number of children nodes, aka. number of already traversed execution paths from the alternative breakpoint
     alternative_children = list(node_matcher.match("Collective_BP").where("_.app_name =~ '{}' AND _.prev_coll_bp =~ '{}'".format(app.app_name, curr_coll_bp['coll_bp_id'])))
     num_alternative_children = len(list(node_matcher.match("Collective_BP").where("_.app_name =~ '{}' AND _.prev_coll_bp =~ '{}'".format(app.app_name, curr_coll_bp['coll_bp_id']))))
 
-    #Get number of non-finished processes at alternative coll. bp.
     num_not_finished = 0
 
     for proc_name in alternative_processes:
@@ -241,22 +229,18 @@ def Update_closest_alternative_coll_bp(app, curr_bp_id, final_process_states):
                 num_not_finished += 1          
             i += 1
 
-    # Check if every child node is exhausted as well
     children_exh = True
     for act_node in alternative_children:
         if (act_node['exhausted'] == "No"):
             children_exh = False
             break
 
-    # Check if exhausted, if so, then update
     if ((num_not_finished == num_alternative_children) and (children_exh == True)):
 
-        # Set node exhausted flag and then push
         curr_coll_bp['exhausted'] = "Yes"
         neo_graph.push(curr_coll_bp)
         logger.info('Updated alternative coll. bp. "{}" to exhausted.'.format(curr_coll_bp['coll_bp_id']))
 
-        # If coll. bp. is root, then no need to continue updating parent nodes, since no parent node is available
         if (curr_coll_bp['node_type'] != "root"):
             Update_closest_alternative_coll_bp(app, curr_coll_bp['coll_bp_id'], final_state_processes)
             return
@@ -382,8 +366,6 @@ def Get_process_states_of_coll_bp(app, coll_bp_id):
     """
     
     if (Does_coll_bp_exist(app, coll_bp_id) == True):
-
-        # Get Neo4j database connection details
         conn_details = Read_connection_details(silent=True)
         neo_graph = conn_details[1]
 

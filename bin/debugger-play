@@ -37,8 +37,6 @@ arg_group.add_argument('-d', '--destroy', action='store_true', help='destroy inf
 #Option: replay
 arg_group.add_argument('-r', '--replay', type=str, metavar='COLLECTIVE_BREAKPOINT_ID', help='replay a given application to the given global state')
 
-#Option: auto-debug
-
 #Argparse
 args = parser.parse_args()
 
