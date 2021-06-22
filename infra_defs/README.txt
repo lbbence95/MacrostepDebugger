@@ -1,0 +1,1 @@
+This folder is used as the standard folder for storing application and infrastructure descriptors.
