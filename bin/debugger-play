@@ -1,0 +1,75 @@
+#!/usr/bin/env python
+
+#CLI functions related to replaying an execution-path.
+import controller.controller as mstep_controller
+import argparse, logging
+
+#Logger setup
+logger = logging.getLogger('debugger_replay')
+logger.propagate = False
+logger.setLevel(logging.INFO)
+
+console_handler = logging.StreamHandler()
+formatter = logging.Formatter('*** (%(asctime)s): %(message)s', "%Y-%m-%d %H:%M:%S")
+console_handler.setFormatter(formatter)
+
+logger.addHandler(console_handler)
+
+#Options and suboptions
+parser = argparse.ArgumentParser(description='Commands and options related to replaying an execution-path.')
+arg_group = parser.add_argument_group()
+
+#Option: define application
+arg_group.add_argument('-a', '--application', type=str, metavar='APPLICATION_NAME', nargs=1, required=True, help='an application name on which replaying is executed')
+
+#Option: define infrastructure
+arg_group.add_argument('-i', '--infrastructure', type=str, metavar='INFRA_ID', help='an infrastructure ID')
+
+#Option: manual debugging
+arg_group.add_argument('-m', '--manual', action='store_true', help='manual debugging/stepping mode')
+
+#Option: automatic debugging
+arg_group.add_argument('-au', '--auto', action='store_true', help='automatic debugging mode')
+
+#Option: destroy/stop debugging
+arg_group.add_argument('-d', '--destroy', action='store_true', help='destroy infrastructure and stop debugging infrastructure')
+
+#Option: replay
+arg_group.add_argument('-r', '--replay', type=str, metavar='COLLECTIVE_BREAKPOINT_ID', help='replay a given application to the given global state')
+
+#Option: auto-debug
+
+#Argparse
+args = parser.parse_args()
+
+if __name__ == "__main__":
+    # Start instance debug
+    if (args.application != None):
+
+        # Manual debugging
+        if (args.manual == True):
+            mstep_controller.Start_manual_debug_session(args.application[0])
+        
+        # Automatic debugging
+        elif (args.auto == True):
+            mstep_controller.Start_automatic_debug_session(args.application[0])
+
+        # Replay
+        elif (args.replay != None):
+
+            # Replay a given infrastructure
+            if (args.infrastructure != None):
+                logger.info('Not yet implemented...')
+            
+            # Replay to a given state
+            else:
+                mstep_controller.Replay_app_to_state(args.application[0], args.replay, keep_instance=False, continue_manual=False)
+
+        # Destroy infrastructure
+        elif (args.destroy == True):
+            if (args.infrastructure != None):
+                mstep_controller.Stop_debugging_infra(args.application[0], args.infrastructure)
+            else:
+                logger.info('Please define an infrastructure!')
+        else:
+            logger.info('Please specify either the start of a manual/automatic debugging session, a replay session or destroying a current instance!')
