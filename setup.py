@@ -1,12 +1,12 @@
 #!/usr/bin/env -e python
 
-# Macrostep debugger v0.2 (2021.02.)
+# Macrostep debugger v0.4 (2021.06.)
 
 import setuptools
 
 setuptools.setup(
-    name='Marcrostep cloud debugger',
-    version='0.2',
+    name='Cloud-based Macrostep Debugger',
+    version='0.4',
     author='ELKH SZTAKI-LPDS',
     packages=[
         'api',
@@ -15,10 +15,10 @@ setuptools.setup(
         'util'
     ],
     scripts=[
-        'bin/debugger-app',
-        'bin/debugger-list',
-        'bin/debugger-trace',
-        'bin/debugger-step',
-        'bin/debugger-replay'
+        'bin/debugger.py',
+        'bin/debugger-app.py',
+        'bin/debugger-list.py',
+        'bin/debugger-step.py',
+        'bin/debugger-play.py'
     ]
 )
