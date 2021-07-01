@@ -15,10 +15,10 @@ setuptools.setup(
         'util'
     ],
     scripts=[
-        'bin/debugger.py',
-        'bin/debugger-app.py',
-        'bin/debugger-list.py',
-        'bin/debugger-step.py',
-        'bin/debugger-play.py'
+        'bin/debugger',
+        'bin/debugger-app',
+        'bin/debugger-list',
+        'bin/debugger-step',
+        'bin/debugger-play'
     ]
 )
