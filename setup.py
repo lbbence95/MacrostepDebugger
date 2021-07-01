@@ -11,6 +11,8 @@ setuptools.setup(
     packages=[
         'api',
         'controller',
+		'controller.orchestratorhandler',
+		'controller.orchestratorhandler.plugins',
         'data',
         'util'
     ],
