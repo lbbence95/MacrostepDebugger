@@ -173,7 +173,6 @@ def Stop_debugging_infra(app_name, infra_id):
         # Application exists
         app = mstep_repo.Read_given_application(app_name)
 
-        # Destroy infrastructure instance using appropriate orchestrator handler
         orch_handler = mstep_orch_factory.GetOrchHandler(app.orch)
 
         # Destroy infra
@@ -584,11 +583,6 @@ def Get_process_to_step_auto_debug(app, app_instance, selection_policy="abc"):
                 if (act_proc.finished == 0):
                     test_state = json.loads(json.dumps(mstep_repo.Get_global_state_for_infra(app_instance.infra_id)))
                     test_state[act_proc.node_name][i] += 1
-
-                    print('Curr state: {}'.format(json.loads(json.dumps(mstep_repo.Get_global_state_for_infra(app_instance.infra_id)))))
-                    print('Test state: {}'.format(test_state))
-                    print('Traversed states: {}'.format(traversed_states))
-                    input('waiting...')
 
                     if (test_state not in traversed_states):
                         return act_proc.node_id
