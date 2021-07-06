@@ -47,7 +47,6 @@ if __name__ == "__main__":
     
     # -s and -p: Service start and port
     elif (args.start == True):
-        # TO-DO: organize port checking to the controller?
         if (args.port != None):
             if (int(args.port) and int(args.port) > 0 and int(args.port) <= 65535):
                 mstep_controller.Initialize()
