@@ -162,7 +162,6 @@ def Process_breakpoint_data(public_ip, json_data, curr_time):
     node_id = json_data['processData']['nodeID']
     bp_tag = json_data['processData']['bpTag']
 
-    #Initial breakpoint ID.
     bp_id = 1
 
     #Check if infrastructure already exists.
@@ -201,8 +200,7 @@ def Process_breakpoint_data(public_ip, json_data, curr_time):
 
             mstep_repo.Register_new_breakpoint(infra_id, node_id, datetime.now(), int(bp_id), json.dumps(json_data), bp_tag)
             mstep_repo.Update_node_current_bp_and_permission(infra_id, node_id)
-
-            #Check whether or not the node finished, aka. tags contain 'last' or 'last_bp'.
+			
             tags = bp_tag.split(' ')
 
             if (any((True for x in ['last', 'last_bp'] if x in tags)) == True):
@@ -239,7 +237,6 @@ def Validate_necessary_keys_exists(json_data):
     """
 
     try:
-        # Infrastructure related data
         json_data['processData']
         json_data['processData']['infraID']
         json_data['processData']['infraName']
@@ -247,7 +244,6 @@ def Validate_necessary_keys_exists(json_data):
         json_data['processData']['nodeName']
         json_data['processData']['bpTag']
 
-        # User data
         json_data['userData']
         json_data['userData']['nodeIP']
 
