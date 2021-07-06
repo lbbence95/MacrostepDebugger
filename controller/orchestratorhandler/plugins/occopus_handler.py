@@ -126,7 +126,6 @@ class OccopusHandler():
         url_status = app.orch_loc + '/infrastructures/' + instance_id
 
         # Contains process (aka. VMs) of the infrastructure instance
-        # This dict is representing VMs. Each VM has a node ID and whether or not it has already reported.
         processes = {}
         infra_up = False
 
@@ -143,7 +142,6 @@ class OccopusHandler():
             else:
                 # Some VMs have started, check if they have reported already
 
-                # Get vm_names
                 vm_names = infra_status.keys()
 
                 #Iterate over the different type of VMs
