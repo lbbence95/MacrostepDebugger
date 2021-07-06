@@ -193,8 +193,6 @@ def Update_closest_alternative_coll_bp(app, curr_bp_id, final_process_states):
         final_process_states (dict): A (default)dict describing the final state of processes.
     """
 
-    #print('app root: {}'.format(app.root_coll_bp))
-
     # Get Neo4j connection details
     conn_details = Read_connection_details(silent=True)
     neo_graph = conn_details[1]
