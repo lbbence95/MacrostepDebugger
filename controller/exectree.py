@@ -1,6 +1,5 @@
 # Module to handle Neo4j transactions, execution-tree operations
 
-from py2neo.database import work
 import data.repository as mstep_repo
 from py2neo import Graph, Node, Relationship, NodeMatcher
 import uuid, json, logging, os.path, yaml
@@ -78,7 +77,7 @@ def Create_root(app, infra_id, process_states):
     # Create root node
     transact = neo_graph.begin()
 
-    root_node = Node("Collective_BP", app_name=app.app_name, infra_id=infra_id, node_type="root", prev_coll_bp="", exhausted="No", coll_bp_id=root_id, process_states=json.dumps(process_states))
+    root_node = Node("Collective_BP", app_name=app.app_name, instance_ids=json.dumps([]), node_type="root", prev_coll_bp="", exhausted="No", coll_bp_id=root_id, process_states=json.dumps(process_states), collected_data=json.dumps([]))
 
     transact.create(root_node)
 
@@ -112,11 +111,11 @@ def Create_collective_breakpoint(app, app_instance, process_states):
     not_finished = mstep_repo.How_many_processes_havent_finished(app_instance.infra_id)
 
     if (not_finished == 0):
-        new_node = Node("Collective_BP", app_name=app.app_name, infra_id=app_instance.infra_id, node_type="final", prev_coll_bp=app_instance.curr_coll_bp, exhausted="Yes", coll_bp_id=coll_bp_id, process_states=json.dumps(process_states))
+        new_node = Node("Collective_BP", app_name=app.app_name, instance_ids=json.dumps([]), node_type="final", prev_coll_bp=app_instance.curr_coll_bp, exhausted="Yes", coll_bp_id=coll_bp_id, process_states=json.dumps(process_states), collected_data=json.dumps([]))
     elif (not_finished >= 2):
-        new_node = Node("Collective_BP", app_name=app.app_name, infra_id=app_instance.infra_id, node_type="alternative", prev_coll_bp=app_instance.curr_coll_bp, exhausted="No", coll_bp_id=coll_bp_id, process_states=json.dumps(process_states))
+        new_node = Node("Collective_BP", app_name=app.app_name, instance_ids=json.dumps([]), node_type="alternative", prev_coll_bp=app_instance.curr_coll_bp, exhausted="No", coll_bp_id=coll_bp_id, process_states=json.dumps(process_states), collected_data=json.dumps([]))
     elif (not_finished == 1):
-        new_node = Node("Collective_BP", app_name=app.app_name, infra_id=app_instance.infra_id, node_type="deterministic", prev_coll_bp=app_instance.curr_coll_bp, exhausted="Yes", coll_bp_id=coll_bp_id, process_states=json.dumps(process_states))
+        new_node = Node("Collective_BP", app_name=app.app_name, instance_ids=json.dumps([]), node_type="deterministic", prev_coll_bp=app_instance.curr_coll_bp, exhausted="Yes", coll_bp_id=coll_bp_id, process_states=json.dumps(process_states), collected_data=json.dumps([]))
 
     transact.create(new_node)
 
@@ -137,7 +136,7 @@ def Create_collective_breakpoint(app, app_instance, process_states):
         if (process_stepped != ""):
             break
 
-    coll_bp_rel = Relationship(prev_node, "MACROSTEP", new_node, app_name=app.app_name, infra_id=app_instance.infra_id, process_stepped="{}[{}]".format(process_stepped, i + 1))
+    coll_bp_rel = Relationship(prev_node, "MACROSTEP", new_node, app_name=app.app_name, process_stepped="{}[{}]".format(process_stepped, i + 1))
     transact.create(coll_bp_rel)
 
     transact.commit()
@@ -246,6 +245,38 @@ def Update_closest_alternative_coll_bp(app, curr_bp_id, final_process_states):
             return
 
     logger.info('No (further) alternative parent node updated.')
+
+
+def Update_node_app_instance_ids(app, coll_bp_id, app_instance_id):
+    """Adds the given application instance ID to the given collective breakpoint's application instance IDs list.
+
+    Args:
+        app (Application): An Application.
+        coll_bp_id (string): A collective breakpoint ID identifing a collective breakpoint in the application's exectuion tree.
+        app_instance_id (string): An application instance ID to store.
+    """
+
+    conn_details = Read_connection_details(silent=True)
+    neo_graph = conn_details[1]
+    node_matcher = NodeMatcher(neo_graph)
+
+    coll_bp_to_update = node_matcher.match('Collective_BP').where("_.app_name =~ '{}' AND _.coll_bp_id =~ '{}'".format(app.app_name, coll_bp_id)).first()
+
+    app_instance_ids = list(json.loads(coll_bp_to_update['instance_ids']))
+    app_instance_ids.append(app_instance_id)
+
+    coll_bp_to_update['instance_ids'] = json.dumps(app_instance_ids)
+    neo_graph.push(coll_bp_to_update)
+
+    # Store data at coll. bp.
+    new_data = {}
+    new_data[app_instance_id] = mstep_repo.Get_app_instance_curr_coll_bp_data(app, app_instance_id)
+
+    collected_data = list(json.loads(coll_bp_to_update['collected_data']))
+    collected_data.append(new_data)
+
+    coll_bp_to_update['collected_data'] = json.dumps(collected_data)
+    neo_graph.push(coll_bp_to_update)
 
 
 def Is_app_root_exhausted(app_name):
