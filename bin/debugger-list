@@ -25,10 +25,10 @@ exclusive_sub_group = parser.add_argument_group()
 exclusive_group.add_argument('-a','--applications', type=str, nargs='*', metavar='APP_NAME', help='show details of a given application')
 
 #Option: infrastructure
-exclusive_group.add_argument('-i', '--infrastructures', type=str, nargs='*', metavar='INFRA_ID', help='show details of a given infrastructure')
+exclusive_group.add_argument('-i', '--infrastructures', type=str, nargs='*', metavar='INSTANCE_ID', help='show details of a given application instance')
 
 #Option: nodes
-exclusive_sub_group.add_argument('-n','--nodes', type=str, nargs='*', metavar='NODE_ID', help='show details of a given node')
+exclusive_sub_group.add_argument('-n','--nodes', type=str, nargs='*', metavar='NODE_ID', help='show details for a given process (node)')
 
 #Argparse
 args = parser.parse_args()
