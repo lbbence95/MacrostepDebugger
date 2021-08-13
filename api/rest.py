@@ -258,7 +258,7 @@ def Validate_JSON_value_types(request_data):
         request_data (request): A request containing the JSON string.
 
     Returns:
-        bool: True if the values are acceptable, otherwise False.
+        bool: True if values are in correct type, otherwise False.
     """
     
     json_data = json.loads(request_data.get_data())
