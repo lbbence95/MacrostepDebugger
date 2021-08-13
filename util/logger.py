@@ -43,7 +43,7 @@ def List_one_application(app_name):
     application = mstep_repo.Read_given_application(app_name)
 
     if (application != None):
-        print('\r\n"{}" registered at : "{}"\r\norch.: "{}", orch. URI: "{}",\r\ninfra. descriptor: "{}"\r\n\nApp. processes: {}\r\n\nRoot ID: "{}"\r\nCurr. coll. bp. ID: "{}"'
+        print('\r\n"{}" registered at : "{}"\r\norch.: "{}", orch. URI: "{}",\r\ninfra. descriptor: "{}"\r\n\nApp. processes: {}\r\n\nRoot ID: "{}"\r\n'
         .format(application.app_name, application.creation_date.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3], 
         application.orch.upper(), application.orch_loc, application.infra_file, application.processes, application.root_coll_bp, application.curr_coll_bp))
 
