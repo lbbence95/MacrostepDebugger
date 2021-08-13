@@ -22,7 +22,7 @@ exclusive_group = parser.add_mutually_exclusive_group()
 sub_group = parser.add_argument_group()
 
 #Option: Define new application
-exclusive_group.add_argument('-a', '--application', type=str, metavar='APP_NAME', nargs=1, help='a user given application name')
+exclusive_group.add_argument('-i', '--import_app', type=str, metavar='APP_DESC', nargs=1, help='import an application descriptor file')
 
 #Argparse
 args = parser.parse_args()
@@ -30,5 +30,5 @@ args = parser.parse_args()
 if __name__ == "__main__":
     
     # -a: Register new application
-    if (args.application != None):
-        mstep_controller.Process_app_descriptor(args.application[0])
+    if (args.import_app != None):
+        mstep_controller.Process_app_descriptor(args.import_app[0])
