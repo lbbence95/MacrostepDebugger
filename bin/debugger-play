@@ -22,11 +22,11 @@ arg_group = parser.add_argument_group()
 #Option: define application
 arg_group.add_argument('-a', '--application', type=str, metavar='APPLICATION_NAME', nargs=1, required=True, help='an application name on which replaying is executed')
 
-#Option: define infrastructure
-arg_group.add_argument('-i', '--infrastructure', type=str, metavar='INFRA_ID', help='an infrastructure ID')
-
 #Option: manual debugging
 arg_group.add_argument('-m', '--manual', action='store_true', help='manual debugging/stepping mode')
+
+#Sub-option: continue manual
+arg_group.add_argument('-cm', '--continuemanual', action='store_true', help='continue debugging manually')
 
 #Option: automatic debugging
 arg_group.add_argument('-au', '--auto', action='store_true', help='automatic debugging mode')
@@ -34,8 +34,11 @@ arg_group.add_argument('-au', '--auto', action='store_true', help='automatic deb
 #Option: destroy/stop debugging
 arg_group.add_argument('-d', '--destroy', action='store_true', help='destroy infrastructure and stop debugging infrastructure')
 
+#Sub-option: define infrastructure
+arg_group.add_argument('-i', '--infrastructure', type=str, metavar='INSTANCE_ID', help='an application instance ID')
+
 #Option: replay
-arg_group.add_argument('-r', '--replay', type=str, metavar='COLLECTIVE_BREAKPOINT_ID', help='replay a given application to the given global state')
+arg_group.add_argument('-r', '--replay', type=str, metavar='COLLECTIVE_BREAKPOINT_ID', help='replay a given application to the given collective breakpoint')
 
 #Argparse
 args = parser.parse_args()
@@ -60,6 +63,8 @@ if __name__ == "__main__":
                 logger.info('Not yet implemented...')
             
             # Replay to a given state
+            elif (args.continuemanual == True):
+                mstep_controller.Replay_app_to_state(args.application[0], args.replay, keep_instance=False, continue_manual=True)
             else:
                 mstep_controller.Replay_app_to_state(args.application[0], args.replay, keep_instance=False, continue_manual=False)
 
