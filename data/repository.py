@@ -3,7 +3,7 @@
 import data.db as mstep_db
 from datetime import datetime
 from collections import defaultdict
-import os.path
+import json, os.path
 
 def Initialize_db():
     """Initializes a new database.
@@ -505,3 +505,40 @@ def How_many_processes_havent_finished(instance_id):
             num_unfinished += 1
     
     return num_unfinished
+
+def Get_app_instance_curr_coll_bp_data(app, app_instance_id):
+    """Returns a dictionary containing received data.
+
+    Args:
+        app (Application): An Application.
+        app_instance_id (string): An application instance ID.
+
+    Returns:
+        dict: A dictionary containing data received from processes at the current collective breakpoint.
+    """
+
+    processes = Read_nodes_from_infra(app_instance_id)
+    data_dict = {}
+    
+    process_names = []
+    for act_proc in processes:
+        process_names.append(act_proc.node_name)
+            
+    process_names = sorted(process_names)
+    for act_proc_name in process_names:
+        data_dict[act_proc_name] = {}
+
+    i = 1
+    curr_proc_name = processes[0].node_name
+
+    for act_proc in processes:
+
+        if (act_proc.node_name != curr_proc_name):
+            i = 1
+
+        bp_data = json.loads(Read_given_nodes_breakpoint(app_instance_id, act_proc.node_id)[act_proc.curr_bp - 1].bp_data)
+
+        data_dict[act_proc.node_name][i] = bp_data
+        i += 1
+    
+    return data_dict
