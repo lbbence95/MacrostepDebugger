@@ -147,6 +147,7 @@ def Start_infra_instance(app):
             
             # Update (infrastructure) instance current collective breakpoint ID
             mstep_repo.Update_instance_current_collective_breakpoint(instance_infra_id, root_id)
+            mstep_exectree.Update_node_app_instance_ids(app, root_id, instance_infra_id)
 
             # Update application current_collective breakpoint ID
             mstep_repo.Update_app_current_collective_breakpoint(app.app_name, root_id)
@@ -245,6 +246,8 @@ def Start_automatic_debug_session(app_name):
 
                 # Update (infrastructure) instance current collective breakpoint ID
                 mstep_repo.Update_instance_current_collective_breakpoint(instance_id, next_coll_bp_id)
+                mstep_exectree.Update_node_app_instance_ids(app, next_coll_bp_id, instance_id)
+
                 app_instance = mstep_repo.Read_given_infrastructure(instance_id)
 
                 if (app_instance.finished == 1):
@@ -346,6 +349,7 @@ def Start_manual_debug_session(app_name):
 
             # Update (infrastructure) instance current collective breakpoint ID
             mstep_repo.Update_instance_current_collective_breakpoint(instance_id, next_coll_bp_id)
+            mstep_exectree.Update_node_app_instance_ids(app, next_coll_bp_id, instance_id)
      
         # Exection path exhausted, destroy instance
         logger.info('Instance {} finished deployment!'.format(instance_id))
@@ -417,6 +421,7 @@ def Replay_app_to_state(app_name, target_coll_bp_id, keep_instance=False, contin
 
                     # Store new coll bp id, update current global state
                     mstep_repo.Update_instance_current_collective_breakpoint(app_instance.infra_id, next_coll_bp_id)
+                    mstep_exectree.Update_node_app_instance_ids(app, next_coll_bp_id, instance_id)
                     curr_process_states = json.dumps(mstep_repo.Get_global_state_for_infra(instance_id))
 
                     logger.info('Consistent global state reached.\r\n')
@@ -489,6 +494,7 @@ def Replay_app_to_state(app_name, target_coll_bp_id, keep_instance=False, contin
 
                             # Update (infrastructure) instance current collective breakpoint ID
                             mstep_repo.Update_instance_current_collective_breakpoint(instance_id, next_coll_bp_id)
+                            mstep_exectree.Update_node_app_instance_ids(app, next_coll_bp_id, instance_id)
                         
                         # Exection path exhausted, destroy instance if needed
                         logger.info('Instance {} finished deployment!'.format(instance_id))
