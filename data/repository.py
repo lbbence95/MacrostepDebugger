@@ -447,9 +447,10 @@ def Is_infra_in_root_state(infra_id):
         infra_id (string): An infrastructure ID.
     """
     
-    # An infrastructure is in root state if every process is waiting for permission (processes are halted) and every process is at their first breakpoint.
+    # An infrastructure is in a root state if every process is waiting for permission (processes are halted) and every process is at their first breakpoint.
     if (Is_infra_in_consistent_global_state(infra_id) == True):
         
+        # Check if every process is at its first breakpoint
         infra_nodes = Read_nodes_from_infra(infra_id)
         root_state = True
 
@@ -520,7 +521,7 @@ def Get_app_instance_curr_coll_bp_data(app, app_instance_id):
     processes = Read_nodes_from_infra(app_instance_id)
     data_dict = {}
     process_names = []
-	
+
     for act_proc in processes:
         process_names.append(act_proc.node_name)
             
