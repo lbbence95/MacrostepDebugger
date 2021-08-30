@@ -30,6 +30,8 @@ exclusive_group.add_argument('-i', '--infrastructures', type=str, nargs='*', met
 #Option: nodes
 exclusive_sub_group.add_argument('-n','--nodes', type=str, nargs='*', metavar='NODE_ID', help='show details for a given process (node)')
 
+#TO-DO: details of a given breakpoint for a given node (db)
+
 #Argparse
 args = parser.parse_args()
 

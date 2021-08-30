@@ -19,6 +19,7 @@ logger.addHandler(console_handler)
 parser = argparse.ArgumentParser(description='Commands and options related to replaying an execution-path.')
 arg_group = parser.add_argument_group()
 
+
 #Option: define application
 arg_group.add_argument('-a', '--application', type=str, metavar='APPLICATION_NAME', nargs=1, required=True, help='an application name on which replaying is executed')
 
@@ -39,6 +40,7 @@ arg_group.add_argument('-i', '--infrastructure', type=str, metavar='INSTANCE_ID'
 
 #Option: replay
 arg_group.add_argument('-r', '--replay', type=str, metavar='COLLECTIVE_BREAKPOINT_ID', help='replay a given application to the given collective breakpoint')
+
 
 #Argparse
 args = parser.parse_args()
