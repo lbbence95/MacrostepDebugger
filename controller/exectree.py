@@ -15,7 +15,6 @@ console_handler.setFormatter(formatter)
 
 logger.addHandler(console_handler)
 
-
 def Read_connection_details(silent=False):
     """Reads connection details from 'controller/neo4j_conn.yaml'.
 
@@ -74,14 +73,12 @@ def Create_root(app, infra_id, process_states):
  
     root_id = str(uuid.uuid4())
 
-    # Create root node
     transact = neo_graph.begin()
 
     root_node = Node("Collective_BP", app_name=app.app_name, instance_ids=json.dumps([]), node_type="root", prev_coll_bp="", exhausted="No", coll_bp_id=root_id, process_states=json.dumps(process_states), collected_data=json.dumps([]))
 
     transact.create(root_node)
 
-    # Commit
     transact.commit()
 
     return root_id
@@ -103,7 +100,6 @@ def Create_collective_breakpoint(app, app_instance, process_states):
     neo_graph = conn_details[1]
     node_matcher = NodeMatcher(neo_graph)
 
-    # Create new node
     transact = neo_graph.begin()
     new_node = None
     coll_bp_id = str(uuid.uuid4())
@@ -157,12 +153,10 @@ def Get_closest_non_exhausted_parent(app, curr_bp_id, final_process_states):
     """
 
 
-    # Get Neo4j connection details
     conn_details = Read_connection_details(silent=True)
     neo_graph = conn_details[1]
     node_matcher = NodeMatcher(neo_graph)
 
-    # Get previous collective breakpoint
     curr_coll_bp = node_matcher.match("Collective_BP").where("_.app_name =~ '{}' AND _.coll_bp_id =~ '{}'".format(app.app_name, curr_bp_id)).first()
     curr_coll_bp = node_matcher.match("Collective_BP").where("_.app_name =~ '{}' AND _.coll_bp_id =~ '{}'".format(app.app_name, curr_coll_bp['prev_coll_bp'])).first()
 
@@ -170,7 +164,6 @@ def Get_closest_non_exhausted_parent(app, curr_bp_id, final_process_states):
     if (curr_coll_bp['exhausted'] == "No"):
         not_exhausted = True
     
-    # Go backwards in tree until a non-exhausted node is found
     while (not_exhausted != True):
 
         if (curr_coll_bp['node_type'] == "root"):
@@ -192,12 +185,10 @@ def Update_closest_alternative_coll_bp(app, curr_bp_id, final_process_states):
         final_process_states (dict): A (default)dict describing the final state of processes.
     """
 
-    # Get Neo4j connection details
     conn_details = Read_connection_details(silent=True)
     neo_graph = conn_details[1]
     node_matcher = NodeMatcher(neo_graph)
 
-    # Get previous collective breakpoint
     curr_coll_bp = node_matcher.match("Collective_BP").where("_.app_name =~ '{}' AND _.coll_bp_id =~ '{}'".format(app.app_name, curr_bp_id)).first()
     curr_coll_bp = node_matcher.match("Collective_BP").where("_.app_name =~ '{}' AND _.coll_bp_id =~ '{}'".format(app.app_name, curr_coll_bp['prev_coll_bp'])).first()
 
@@ -205,7 +196,6 @@ def Update_closest_alternative_coll_bp(app, curr_bp_id, final_process_states):
     if (curr_coll_bp['node_type'] == "root" or curr_coll_bp['node_type'] == "alternative"):
         is_root_or_alt = True
 
-    # Go backwards in tree until an alternative coll. bp. is found
     while (is_root_or_alt == False):
         curr_coll_bp = node_matcher.match("Collective_BP").where("_.app_name =~ '{}' AND _.coll_bp_id =~ '{}'".format(app.app_name, curr_coll_bp['prev_coll_bp'])).first()
         if (curr_coll_bp['node_type'] == "root" or curr_coll_bp['node_type'] == "alternative"):
@@ -268,7 +258,6 @@ def Update_node_app_instance_ids(app, coll_bp_id, app_instance_id):
     coll_bp_to_update['instance_ids'] = json.dumps(app_instance_ids)
     neo_graph.push(coll_bp_to_update)
 
-    # Store data at coll. bp.
     new_data = {}
     new_data[app_instance_id] = mstep_repo.Get_app_instance_curr_coll_bp_data(app, app_instance_id)
 
@@ -342,7 +331,6 @@ def Get_list_of_children_nodes(app, coll_bp_id):
         list: A list of collective breakpoint IDs.
     """
 
-    # Get Neo4j database connection details
     conn_details = Read_connection_details(silent=True)
     neo_graph = conn_details[1]
     node_matcher = NodeMatcher(neo_graph)
@@ -357,7 +345,6 @@ def Get_list_of_children_nodes(app, coll_bp_id):
     
     return children_nodes
 
-
 def Does_coll_bp_exist(app, coll_bp_id):
     """Determines if the given collective breakpoint ID exists the given application's exection tree.
 
@@ -369,7 +356,6 @@ def Does_coll_bp_exist(app, coll_bp_id):
         bool: True if the given collective breakpoint exists, False if not.
     """
 
-    # Get Neo4j database connection details
     conn_details = Read_connection_details(silent=True)
     neo_graph = conn_details[1]
 
@@ -381,7 +367,6 @@ def Does_coll_bp_exist(app, coll_bp_id):
         return False
     else:
         return True
-
 
 def Get_process_states_of_coll_bp(app, coll_bp_id):
     """Gets the global state (process states) of the given collective breakpoint ID.
@@ -395,6 +380,7 @@ def Get_process_states_of_coll_bp(app, coll_bp_id):
     """
     
     if (Does_coll_bp_exist(app, coll_bp_id) == True):
+
         conn_details = Read_connection_details(silent=True)
         neo_graph = conn_details[1]
 
@@ -403,7 +389,6 @@ def Get_process_states_of_coll_bp(app, coll_bp_id):
         return (node_matcher.match("Collective_BP").where("_.app_name =~ '{}' AND _.coll_bp_id =~ '{}'".format(app.app_name, coll_bp_id)).first()['process_states'])
     else:
         return ""
-
 
 def Get_root_id_for_application(app):
     """Returns the root collective breakpoints ID for the given application.
@@ -415,7 +400,6 @@ def Get_root_id_for_application(app):
         string: The root ID ot an empty string ("") if it does not exist.
     """
 
-    # Get Neo4j database connection details
     conn_details = Read_connection_details(silent=True)
     neo_graph = conn_details[1]
 
@@ -423,12 +407,10 @@ def Get_root_id_for_application(app):
 
     root_node = node_matcher.match("Collective_BP").where("_.app_name =~ '{}' AND _.node_type =~ '{}'".format(app.app_name, "root")).first()
 
-    # Root exists
     if (root_node != None):
         return root_node['coll_bp_id']
     else:
         return ""
-
 
 def Get_next_coll_bp_id_to_target(app, start_coll_bp_id, target_coll_bp_id):
     """Gets the next collective breakpoint ID that leads to the given targeted collective breakpoint from the current collective breakpoint.
@@ -447,7 +429,6 @@ def Get_next_coll_bp_id_to_target(app, start_coll_bp_id, target_coll_bp_id):
     elif (target_coll_bp_id == app.root_coll_bp):
         return app.root_coll_bp
     else:
-        # Get Neo4j database connection details
         conn_details = Read_connection_details(silent=True)
         neo_graph = conn_details[1]
 
@@ -455,13 +436,11 @@ def Get_next_coll_bp_id_to_target(app, start_coll_bp_id, target_coll_bp_id):
 
         path = []
 
-        # Store target
         curr_node = node_matcher.match("Collective_BP").where("_.app_name =~ '{}' AND _.coll_bp_id =~ '{}'".format(app.app_name, target_coll_bp_id)).first()
 
         path.append(curr_node['coll_bp_id'])
         curr_node = node_matcher.match("Collective_BP").where("_.app_name =~ '{}' AND _.coll_bp_id =~ '{}'".format(app.app_name, curr_node['prev_coll_bp'])).first()
 
-        # Move backwards until root or desired next state is reached
         while (curr_node['node_type'] != "root" and curr_node['coll_bp_id'] != start_coll_bp_id):
             path.append(curr_node['coll_bp_id'])
             curr_node = node_matcher.match("Collective_BP").where("_.app_name =~ '{}' AND _.coll_bp_id =~ '{}'".format(app.app_name, curr_node['prev_coll_bp'])).first()
