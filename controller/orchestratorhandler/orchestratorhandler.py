@@ -27,7 +27,7 @@ class OrchestratorHandler():
         """
         pass
 
-    def Check_process_statuses(self, app, instance_id):
+    def Check_process_states(self, app, instance_id):
         """The debugger receives state information from various processes, however it does not know how many processes it shall handle. 
         This function shall check if all processes in the application are running, be it virtual machines or other actual processes.
 
