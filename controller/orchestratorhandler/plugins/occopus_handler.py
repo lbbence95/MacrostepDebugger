@@ -125,6 +125,8 @@ class OccopusHandler():
         
         url_status = app.orch_loc + '/infrastructures/' + instance_id
 
+        # Contains process (aka. VMs) of the infrastructure instance
+        # This dict is representing VMs. Each VM has a node ID and whether or not it has already reported.
         processes = {}
         infra_up = False
 
@@ -132,21 +134,30 @@ class OccopusHandler():
             print('')
             logger.info('Checking process states. Making request to "{}"'.format(url_status))
 
+            # Get infrastructure status
             infra_status = requests.get(url=url_status).json()
 
             if (bool(infra_status) == False):
+                # No VM started yet by orchestrator
                 logger.info('Waiting for "{}" to start VMs...'.format(app.orch.upper()))
             else:
+                # Some VMs have started, check if they have reported already
+
+                # Get vm_names
                 vm_names = infra_status.keys()
 
+                #Iterate over the different type of VMs
                 for act_vm_name in vm_names:
                     act_vm_ids = list(infra_status[act_vm_name]['instances'].keys())
 
+                    #Iterate over each VM ID from that type
                     for vm_id in act_vm_ids:
 
+                        #Store if actual VM already exists or not (aka. reported to the debugger)
                         processes[vm_id] = mstep_repo.Node_exists(instance_id, vm_id)
                         logger.info('Waiting for VM: {} ("{}"), ready: {}'.format(vm_id, act_vm_name, 'Yes' if processes[vm_id] == True else 'No'))
 
+                # Check if every VM is ready
                 infra_up = True
 
                 for act_vm_id in processes:
@@ -155,7 +166,9 @@ class OccopusHandler():
                         break
 
             if (infra_up == True):
+                #Instance up and running
                 print('')
                 logger.info('All processes in "{} / {}" are running.'.format(app.app_name, instance_id))
             else:
+                #Instance not fully deployed, wait
                 time.sleep(7)
