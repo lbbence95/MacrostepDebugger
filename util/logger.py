@@ -43,14 +43,15 @@ def List_one_application(app_name):
     application = mstep_repo.Read_given_application(app_name)
 
     if (application != None):
-        print('\r\n"{}" registered at : "{}"\r\norch.: "{}", orch. URI: "{}",\r\ninfra. descriptor: "{}"\r\n\nApp. processes: {}\r\n\nRoot ID: "{}"\r\n'
+        print('\r\n"{}" registered at : "{}"\r\norch.: "{}", orch. URI: "{}",\r\ninfra. descriptor: "{}"\r\n\nApp. process types: {}\r\n\nRoot ID: "{}"\r\n'
         .format(application.app_name, application.creation_date.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3], 
         application.orch.upper(), application.orch_loc, application.infra_file, application.processes, application.root_coll_bp, application.curr_coll_bp))
 
+        # TO-DO: list instance informations as well
 
         infra_instances = mstep_repo.Read_all_instance_for_given_application(app_name)
 
-        print('Instances:')
+        print('Instances: {}'.format(len(infra_instances)))
 
         if (infra_instances != None):
             for act_instance in infra_instances:
