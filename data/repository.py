@@ -20,10 +20,10 @@ def Register_new_application(app_data):
     """
 
     new_app = mstep_db.Application()
-    new_app.app_name = app_data['app_name']
-    new_app.infra_file = os.path.join('infra_defs', app_data['infra_file'])
-    new_app.orch = app_data['orch'].lower()
-    new_app.orch_loc = app_data['orch_uri']
+    new_app.app_name = app_data['application_name']
+    new_app.orch = app_data['orchestrator']['type'].lower()
+    new_app.infra_file = os.path.join('infra_defs', app_data['orchestrator'][new_app.orch]['infra_file'])
+    new_app.orch_loc = app_data['orchestrator']['uri']
     new_app.processes = app_data['processes']
     new_app.creation_date = datetime.now()
     mstep_db.Register_application(new_app)
@@ -519,8 +519,8 @@ def Get_app_instance_curr_coll_bp_data(app, app_instance_id):
 
     processes = Read_nodes_from_infra(app_instance_id)
     data_dict = {}
-    
     process_names = []
+	
     for act_proc in processes:
         process_names.append(act_proc.node_name)
             
@@ -536,9 +536,11 @@ def Get_app_instance_curr_coll_bp_data(app, app_instance_id):
         if (act_proc.node_name != curr_proc_name):
             i = 1
 
-        bp_data = json.loads(Read_given_nodes_breakpoint(app_instance_id, act_proc.node_id)[act_proc.curr_bp - 1].bp_data)
+        bp_data = json.loads(list(filter(lambda x: x.bp_num == act_proc.curr_bp, Read_given_nodes_breakpoint(app_instance_id, act_proc.node_id)))[0].bp_data)
 
         data_dict[act_proc.node_name][i] = bp_data
+        data_dict[act_proc.node_name][i]['processData']['bpNum'] = act_proc.curr_bp
+
         i += 1
     
     return data_dict
