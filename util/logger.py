@@ -51,7 +51,10 @@ def List_one_application(app_name):
 
         infra_instances = mstep_repo.Read_all_instance_for_given_application(app_name)
 
-        print('Instances: {}'.format(len(infra_instances)))
+        try:
+            print('Instances: {}'.format(len(infra_instances)))
+        except TypeError:
+            print('Instances: 0')
 
         if (infra_instances != None):
             for act_instance in infra_instances:
