@@ -28,6 +28,8 @@ def Submit_breakpoint_data(infra_id, node_id):
         response: A Flask response object with JSON describing the result.
     """
 
+    # A successful request contains valid JSON content, with the necessary keys and value types.
+    # The breakpoint also has to be a valid breakpoint (breakpoint number either 1 if this is the first breakpoint, or the next if the node already exists in the infrastructure).
     request_data = request
     valid = True
     curr_time = datetime.now()
@@ -53,16 +55,24 @@ def Submit_breakpoint_data(infra_id, node_id):
         return jsonify({'success':False, 'message':'Missing or invalid JSON keys and/or values.', 'code':422}), 422, {'ContentType':'application/json'}
 
     if (valid == True):
+        # The request is valid and contains the necessary data.
         result = Process_breakpoint_data(request_data.remote_addr, request_data.get_json(), curr_time)
 
         if (result[0] == 200):
             logger.info('Received VALID breakpoint data from {}'.format(request.remote_addr))
             mstep_logger.Print_breakpoint_info(request_data)
+
+            # Request processed, check if infrastructure is tracked
+            #if (mstep_exectree.Is_infrastructure_tracked(request_data.get_json()['infraData']['infraID']) == True):
+            #    # Infrastructure is tracked, process global state and send next collective breakpoint
+            #    node_addedd_result = mstep_exectree.Send_collective_breakpoint(request_data.get_json()['infraData']['infraID'])
+            #    logger.info(node_addedd_result[1])
         else:
             logger.info('Received INVALID breakpoint data from {}'.format(request.remote_addr))
         
         return jsonify({'code':result[0], 'message':result[1], 'success':result[2]}), result[0], {'ContentType':'application/json'}
     else:
+        # The request was invalid
         print('\r\n\n\n{}\r\n\n'.format(request_data.get_json()))
         return jsonify({'success':False, 'message':'Invalid JSON, invalid keys or invalid values.', 'code':400}), 400, {'ContentType':'application/json'}
 
@@ -102,9 +112,10 @@ def Report_breakpoints_of_a_node(infra_id, node_id):
 
     if ((mstep_repo.Infra_exists(infra_id) == True) and (mstep_repo.Node_exists(infra_id, node_id) == True)):
         all_breakpoint_data = mstep_repo.Read_given_nodes_breakpoint(infra_id, node_id)
-		
-		breakpoints_dict = {}
-		
+        #all_breakpoint_data = mstep_repo.Read_breakpoint(infra_id, node_id)
+
+        breakpoints_dict = {}
+
         i = 0
         while (i < len(all_breakpoint_data)):
             key = 'breakpoint{}'.format(i + 1)
@@ -123,6 +134,7 @@ def List_infrastructures():
         JSON: A JSON structure containing infrastructure IDs.
     """
 
+    #return jsonify(dict(infrastructures=mstep_repo.Read_all_infrastructure_ids()))
     return "200"
 
 @app.route('/infrastructures/<infra_id>', methods=['GET'])
@@ -136,6 +148,7 @@ def List_nodes_in_inrastructure(infra_id):
         JSON: A JSON structure containing the node IDs in a given infrastructure.
     """
 
+    #return jsonify(dict(infrastructure=infra_id, nodes=mstep_repo.Read_node_ids_from_infra(infra_id)))
     return "200"
 
 #Helper methods and functions
@@ -158,9 +171,12 @@ def Process_breakpoint_data(public_ip, json_data, curr_time):
     node_id = json_data['processData']['nodeID']
     bp_tag = json_data['processData']['bpTag']
 
+    #Initial breakpoint ID.
     bp_id = 1
 
+    #Check if infrastructure already exists.
     if (mstep_repo.Infra_exists(infra_id) == False):
+        #Infrastucture does not exist, first breakpoint. Update the infrastructure. Register the node, and the breakpoint.
         mstep_repo.Update_infrastructure_name(infra_id, infra_name)
         mstep_repo.Register_new_node(infra_id, node_id, node_name, datetime.now(), bp_id, public_ip)
         mstep_repo.Register_new_breakpoint(infra_id, node_id, datetime.now(), int(bp_id), json.dumps(json_data), bp_tag)
@@ -171,7 +187,9 @@ def Process_breakpoint_data(public_ip, json_data, curr_time):
 
         return (200, 'Valid JSON. New infrastructure, node and breakpoint added.', True)
     else:
+        #Infrastructure exists, check if node already exists.
         if (mstep_repo.Node_exists(infra_id,node_id) == False):
+            #Node does not exist, store new node and breakpoint.
             mstep_repo.Register_new_node(infra_id, node_id, node_name, datetime.now(), bp_id, public_ip)
             mstep_repo.Register_new_breakpoint(infra_id, node_id, datetime.now(), int(bp_id), json.dumps(json_data), bp_tag)
 
@@ -187,11 +205,13 @@ def Process_breakpoint_data(public_ip, json_data, curr_time):
 
             return (200, 'Valid JSON. New node and breakpoint added.', True)
         else:
+            #Node exists, store new breakpoint data. Update node breakpoint ID.            
             bp_id = (mstep_repo.Read_current_bp_num_for_node(infra_id, node_id)) + 1
 
             mstep_repo.Register_new_breakpoint(infra_id, node_id, datetime.now(), int(bp_id), json.dumps(json_data), bp_tag)
             mstep_repo.Update_node_current_bp_and_permission(infra_id, node_id)
 
+            #Check whether or not the node finished, aka. tags contain 'last' or 'last_bp'.
             tags = bp_tag.split(' ')
 
             if (any((True for x in ['last', 'last_bp'] if x in tags)) == True):
@@ -227,7 +247,9 @@ def Validate_necessary_keys_exists(json_data):
         bool: True if the necessary keys exist in the JSON string. Otherwise False.
     """
 
+    ### TO-DO: refactoring, (maybe one-level JSON, not two-level JSON ?)
     try:
+        # Infrastructure related data
         json_data['processData']
         json_data['processData']['infraID']
         json_data['processData']['infraName']
@@ -235,6 +257,7 @@ def Validate_necessary_keys_exists(json_data):
         json_data['processData']['nodeName']
         json_data['processData']['bpTag']
 
+        # User data
         json_data['userData']
         json_data['userData']['nodeIP']
 
