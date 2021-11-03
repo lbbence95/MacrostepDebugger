@@ -2,7 +2,7 @@
 
 from util import logger as mstep_logger
 from data import repository as mstep_repo
-from flask import  Flask, request, jsonify
+from flask import Flask, request, jsonify
 from datetime import datetime
 import json, logging
 
@@ -62,11 +62,6 @@ def Submit_breakpoint_data(infra_id, node_id):
             logger.info('Received VALID breakpoint data from {}'.format(request.remote_addr))
             mstep_logger.Print_breakpoint_info(request_data)
 
-            # Request processed, check if infrastructure is tracked
-            #if (mstep_exectree.Is_infrastructure_tracked(request_data.get_json()['infraData']['infraID']) == True):
-            #    # Infrastructure is tracked, process global state and send next collective breakpoint
-            #    node_addedd_result = mstep_exectree.Send_collective_breakpoint(request_data.get_json()['infraData']['infraID'])
-            #    logger.info(node_addedd_result[1])
         else:
             logger.info('Received INVALID breakpoint data from {}'.format(request.remote_addr))
         
@@ -75,6 +70,46 @@ def Submit_breakpoint_data(infra_id, node_id):
         # The request was invalid
         print('\r\n\n\n{}\r\n\n'.format(request_data.get_json()))
         return jsonify({'success':False, 'message':'Invalid JSON, invalid keys or invalid values.', 'code':400}), 400, {'ContentType':'application/json'}
+
+@app.route('/Refresh/<infraID>/<nodeID>/', methods=['POST'])
+def Refresh_breakpoint_data(infraID, nodeID):
+    request_data = request
+    valid = True
+    curr_time = datetime.now()
+
+    if (mstep_repo.Infra_exists(infraID) == False):
+        logger.info('Received INVALID breakpoint data from {}. No such infrastructure.'.format(request.remote_addr))
+        valid = False
+        return jsonify({'success':False, 'message':'No infrastructure exists with this ID.', 'code':404}), 404, {'ContentType':'application/json'}
+
+    if (Validate_JSON(request_data) == False):
+        logger.info('Received INVALID breakpoint data from {}. Invalid JSON.'.format(request.remote_addr))
+        valid = False
+        return jsonify({'success':False, 'message':'Invalid JSON.', 'code':400}), 400, {'ContentType':'application/json'}
+    
+    if (Validate_necessary_keys_exists(request_data.get_json()) == False):
+        logger.info('Received INVALID breakpoint data from {}. Missing or invalid JSON values.'.format(request.remote_addr))
+        valid = False
+        return jsonify({'success':False, 'message':'Missing or invalid values.', 'code':422}), 422, {'ContentType':'application/json'}
+    
+    if (Validate_JSON_value_types(request_data) == False):
+        logger.info('Received INVALID breakpoint data from {}. Missing or invalid keys.'.format(request.remote_addr))
+        valid = False
+        return jsonify({'success':False, 'message':'Missing or invalid JSON keys and/or values.', 'code':422}), 422, {'ContentType':'application/json'}
+    
+    if (valid == True):
+        # The request is valid and contains the necessary data.
+
+        # TEST
+        # REFRESH HERE
+
+        mstep_repo.Update_proc_to_refreshed_in_infra(infraID, nodeID, 1)
+        print('\r\n*** Refreshed "{}"/"{}"'.format(infraID, nodeID))
+        # TEST
+    
+    #print(request_data)
+    
+    return jsonify({'success':True, 'message':'All OK.', 'code':204}), 204, {'ContentType':'application/json'}
 
 
 @app.route('/Next/<infraID>/<nodeID>/', methods=['GET'])
@@ -90,10 +125,33 @@ def Get_step_permission(infraID, nodeID):
     """
 
     if (mstep_repo.Node_exists(infraID, nodeID) == True):
-        if (mstep_repo.Is_node_permission_true(infraID, nodeID) == True):
-            return json.dumps({'success':True, 'next':True}), 200, {'ContentType':'application/json'}
-        else:
+
+        if (mstep_repo.Is_infra_in_root_state(infraID) == True):
             return json.dumps({'success':True,'next':False}), 204, {'ContentType':'application/json'}
+        
+        if (mstep_repo.Is_infra_in_consistent_global_state(infraID) == True):
+
+            if (mstep_repo.Is_all_process_in_infra_refreshed(infraID) == True):
+                
+                if (mstep_repo.Is_node_permission_true(infraID, nodeID) == True):
+                    return json.dumps({'success':True, 'next':True}), 200, {'ContentType':'application/json'}
+                else:
+                    return json.dumps({'success':True,'next':False}), 204, {'ContentType':'application/json'}
+                          
+            else:
+                process = mstep_repo.Read_given_node(infraID, nodeID)
+
+                if (process.refreshed == 1):
+                    return json.dumps({'success':True,'next':False}), 204, {'ContentType':'application/json'}
+                else:
+                    return json.dumps({'success':True,'next':False}), 205, {'ContentType':'application/json'}
+        
+        else:
+            if (mstep_repo.Is_node_permission_true(infraID, nodeID) == True):
+                return json.dumps({'success':True, 'next':True}), 200, {'ContentType':'application/json'}
+            else:
+                return json.dumps({'success':True,'next':False}), 204, {'ContentType':'application/json'}
+         
     else:
         return json.dumps({'success':False,'next':False}), 404, {'ContentType':'application/json'}
 
@@ -153,7 +211,7 @@ def List_nodes_in_inrastructure(infra_id):
 
 #Helper methods and functions
 def Process_breakpoint_data(public_ip, json_data, curr_time):
-    """Processes a JSON string and a public IP address
+    """Processes a JSON string and a public IP address.
 
     Args:
         public_ip (string): An IP adress.
@@ -205,7 +263,7 @@ def Process_breakpoint_data(public_ip, json_data, curr_time):
 
             return (200, 'Valid JSON. New node and breakpoint added.', True)
         else:
-            #Node exists, store new breakpoint data. Update node breakpoint ID.            
+            #Node exists, store new breakpoint data. Update node breakpoint ID.     
             bp_id = (mstep_repo.Read_current_bp_num_for_node(infra_id, node_id)) + 1
 
             mstep_repo.Register_new_breakpoint(infra_id, node_id, datetime.now(), int(bp_id), json.dumps(json_data), bp_tag)
