@@ -89,8 +89,12 @@ def List_nodes_in_infra(infra_id):
         logger.info('No processes in infrastructure')
     else:
         for act_node in nodes:
-            print('"{}" ("{}"), at bp.: #{}, finished: {}, permitted: {}'.format(act_node.node_id, act_node.node_name, act_node.curr_bp,
-            'Yes' if act_node.finished == 1 else 'No', 'Yes' if act_node.move_next == 1 else 'No'))
+            if (act_node.move_next == 1):
+                print('->\t"{}" ("{}"), at bp.: #{}, finished: {}, permitted: {} ({})'.format(act_node.node_name, act_node.node_id, act_node.curr_bp,
+                'Yes' if act_node.finished == 1 else 'No', 'Yes' if act_node.move_next == 1 else 'No', act_node.refreshed))
+            else:
+                print('\t"{}" ("{}"), at bp.: #{}, finished: {}, permitted: {} ({})'.format(act_node.node_name, act_node.node_id, act_node.curr_bp,
+                'Yes' if act_node.finished == 1 else 'No', 'Yes' if act_node.move_next == 1 else 'No', act_node.refreshed))
         
         print('')
 
