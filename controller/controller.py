@@ -40,7 +40,11 @@ def Process_app_descriptor(app_desc_file):
             
             # Check needed keys in app descriptor
             if all (k in app_data for k in ("application_name", "orchestrator")):
-                               
+                
+                # Check for URL
+                if ("url" not in app_data["orchestrator"]):
+                    raise KeyError
+
                 app_desc_ok = True
                 orch = mstep_orch_factory.GetOrchHandler(app_data['orchestrator']['type'])
 
@@ -52,24 +56,25 @@ def Process_app_descriptor(app_desc_file):
                     logger.info('Valid application descriptor file!')
 
                     # Check if infrastructure file is valid
-                    # TypeError if infra_desc_file is None
                     if (orch.Check_infrastructure_descriptor(infra_desc_file) == True):
                         logger.info('Valid infrastructure descriptor file!')
                         infra_desc_ok = True
 
                     else:
-                        logger.info('Invalid infrastructure descriptor file!')
+                        raise TypeError
 
                 # Terraform
-                elif (app_data['orch'] == 'terraform'):
+                elif (app_data['orchestrator']['type'] == 'terraform'):
                     print('Not implemented yet.')
+                else:
+                    print("Not implemented.")
             else:
                 raise KeyError               
 
         except yaml.scanner.ScannerError:
-            logger.info('Invalid application descriptor file!')
+            logger.info('Invalid YAML application descriptor file!')
         except KeyError:
-            logger.info('Invalid application descriptor file!')
+            logger.info('Invalid application descriptor file! Please check keys!')
         except TypeError:
             logger.info('Invalid infrastructure descriptor file!')
 
@@ -81,7 +86,7 @@ def Process_app_descriptor(app_desc_file):
             mstep_repo.Register_new_application(app_data)
 
     else:
-        logger.info('"{}" application descriptor does not exist!'.format(app_desc))
+        logger.info('Given application descriptor does not exist!')
 
 
 def Start_infra_instance(app):
@@ -127,6 +132,7 @@ def Start_infra_instance(app):
 
             if (app_instance_proc_names != app_proc_names):
                 # Error
+                # If error occurs here, it is most likely because the infrastructure descriptor(s) were tampered with (new/modified/deleted node names)
                 Stop_debugging_infra(app.app_name, instance_infra_id)
                 return ""
 
@@ -140,7 +146,7 @@ def Start_infra_instance(app):
                 process_states = mstep_repo.Get_global_state_for_infra(instance_infra_id)
                 root_id = mstep_exectree.Create_root(app, instance_infra_id, process_states)
 
-                logger.info('Root collective breakpoint "{}" created for applciation "{}".'.format(root_id, app.app_name))
+                logger.info('Root collective breakpoint "{}" created for application "{}".'.format(root_id, app.app_name))
 
                 # Update application root coll bp
                 mstep_repo.Update_app_root_collective_breakpoint(app.app_name, root_id)
@@ -236,7 +242,11 @@ def Start_automatic_debug_session(app_name):
                 process_to_step = Get_process_to_step_auto_debug(app, app_instance)
 
                 logger.info('Stepping process: "{} / {}"\r\n'.format(instance_id, process_to_step))
+                
                 mstep_repo.Update_node_step_permission(app_instance.infra_id, process_to_step)
+                mstep_repo.Update_all_proc_to_refreshed_in_infra(instance_id, 0)
+                mstep_repo.Update_proc_to_refreshed_in_infra(instance_id, process_to_step, 1)
+                
                 mstep_logger.List_nodes_in_infra(app_instance.infra_id)
 
                 # Wait for consistent global state
@@ -246,7 +256,12 @@ def Start_automatic_debug_session(app_name):
 
                 # Print current state
                 logger.info('Consistent global state reached!\r\n')
+                #mstep_repo.Update_proc_to_refreshed_in_infra(instance_id, process_to_step, 1)
                 mstep_logger.List_nodes_in_infra(instance_id)
+
+                # Refresh other instances' breakpoint data
+                while (mstep_repo.Is_all_process_in_infra_refreshed(instance_id) != True):
+                    time.sleep(5)
 
                 # Check if current state already exists in exec-tree, If no, insert it
                 process_states = mstep_repo.Get_global_state_for_infra(instance_id)
@@ -328,6 +343,8 @@ def Start_manual_debug_session(app_name):
 
             # Step choosen process
             mstep_repo.Update_node_step_permission(instance_id, process_to_step)
+            mstep_repo.Update_all_proc_to_refreshed_in_infra(instance_id, 0)
+            mstep_repo.Update_proc_to_refreshed_in_infra(instance_id, process_to_step, 1)
 
             # Print current status
             mstep_logger.List_nodes_in_infra(instance_id)
@@ -340,8 +357,13 @@ def Start_manual_debug_session(app_name):
             # Consistent global state reached
             # Print current status
             logger.info('Consistent global state reached!\r\n')
+            #mstep_repo.Update_proc_to_refreshed_in_infra(instance_id, process_to_step, 1)
             mstep_logger.List_nodes_in_infra(instance_id)
 
+            # Refresh other instances' breakpoint data
+            while (mstep_repo.Is_all_process_in_infra_refreshed(instance_id) != True):
+                time.sleep(5)
+            
             # Check if current state already exists in exec-tree, If no, insert it
             process_states = mstep_repo.Get_global_state_for_infra(instance_id)
             app_instance = mstep_repo.Read_given_infrastructure(instance_id)
@@ -443,7 +465,12 @@ def Replay_app_to_state(app_name, target_coll_bp_id, keep_instance=False, contin
                     curr_process_states = json.dumps(mstep_repo.Get_global_state_for_infra(instance_id))
 
                     logger.info('Consistent global state reached.\r\n')
+                    mstep_repo.Update_proc_to_refreshed_in_infra(instance_id, process_to_step.node_id, 1)
                     mstep_logger.List_nodes_in_infra(app_instance.infra_id)
+
+                    # Refresh other instances' breakpoint data
+                    while (mstep_repo.Is_all_process_in_infra_refreshed(instance_id) != True):
+                        time.sleep(5)
 
                     time.sleep(2)
             
@@ -474,6 +501,8 @@ def Replay_app_to_state(app_name, target_coll_bp_id, keep_instance=False, contin
 
                             # Step choosen process
                             mstep_repo.Update_node_step_permission(instance_id, process_to_step)
+                            mstep_repo.Update_all_proc_to_refreshed_in_infra(instance_id, 0)
+                            mstep_repo.Update_proc_to_refreshed_in_infra(instance_id, process_to_step, 1)
 
                             # Print current status
                             mstep_logger.List_nodes_in_infra(instance_id)
@@ -481,12 +510,17 @@ def Replay_app_to_state(app_name, target_coll_bp_id, keep_instance=False, contin
                             # Wait for consistent global state
                             logger.info('Waiting for instance to reach consistent global state...')
                             while (mstep_repo.Is_infra_in_consistent_global_state(instance_id) == False):
-                                time.sleep(5)  
+                                time.sleep(5)
 
                             # Consistent global state reached
                             # Print current status
                             logger.info('Consistent global state reached!\r\n')
+                            #mstep_repo.Update_proc_to_refreshed_in_infra(instance_id, process_to_step, 1)
                             mstep_logger.List_nodes_in_infra(instance_id)
+
+                            # Refresh other instances' breakpoint data
+                            while (mstep_repo.Is_all_process_in_infra_refreshed(instance_id) != True):
+                                time.sleep(5)
 
                             # Check if current state already exists in exec-tree, If no, insert it
                             process_states = mstep_repo.Get_global_state_for_infra(instance_id)
@@ -556,6 +590,7 @@ def Step_given_node(infra_id, node_id, silent=False):
         act_node = mstep_repo.Read_given_node(infra_id, node_id)
         if (act_node.finished == 0):
             mstep_repo.Update_node_step_permission(act_node.infra_id, act_node.node_id)
+            mstep_repo.Update_all_proc_to_refreshed_in_infra(infra_id, 0)
             if (silent == False):
                 mstep_logger.Print_infrastructure_details(infra_id)
         else:           
@@ -662,6 +697,7 @@ def Step_whole_infra(infra_id):
 
         for act_node in infra_nodes:
             mstep_repo.Update_node_step_permission(infra_id, act_node.node_id)
+            mstep_repo.Update_all_proc_to_refreshed_in_infra(infra_id, 0)
 
 
 # Aux. Functions, methods
