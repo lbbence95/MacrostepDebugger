@@ -23,7 +23,7 @@ def Register_new_application(app_data):
     new_app.app_name = app_data['application_name']
     new_app.orch = app_data['orchestrator']['type'].lower()
     new_app.infra_file = os.path.join('infra_defs', app_data['orchestrator'][new_app.orch]['infra_file'])
-    new_app.orch_loc = app_data['orchestrator']['uri']
+    new_app.orch_loc = app_data['orchestrator']['url']
     new_app.processes = app_data['processes']
     new_app.creation_date = datetime.now()
     mstep_db.Register_application(new_app)
@@ -230,7 +230,7 @@ def Read_given_nodes_breakpoint(infra_id, node_id):
         lsit: A list of Breakpoints.
     """
 
-    bp = list(filter(lambda x: x.infra_id and x.node_id == node_id, mstep_db.Read_all_breakpoint()))
+    bp = list(filter(lambda x: x.infra_id == infra_id and x.node_id == node_id, mstep_db.Read_all_breakpoint()))
     return bp
 
 #Read node current breakpoint
@@ -245,7 +245,7 @@ def Read_current_bp_num_for_node(infra_id, node_id):
         int: An integer which is the current breakpoint number for the given node (e.g. 2).
     """
 
-    return int(list(filter(lambda x: x.infra_id and x.node_id == node_id, mstep_db.Read_all_node()))[0].curr_bp)
+    return int(list(filter(lambda x: x.infra_id == infra_id and x.node_id == node_id, mstep_db.Read_all_node()))[0].curr_bp)
 
 # Update
 # Update application root collective breakpoint
@@ -324,6 +324,31 @@ def Update_node_status_finished(infra_id, node_id):
     """
 
     mstep_db.Update_node_status_finished(infra_id, node_id)
+
+def Update_all_proc_to_refreshed_in_infra(infra_id, false_true_int):
+    """Updates the refreshed field of all processes in infrastructure to the described value.
+
+    Args:
+        infra_id (string): An infrastructure ID.
+        false_true_int (int): 0 for False, 1 for True.
+    """
+
+    processes = Read_nodes_from_infra(infra_id)
+
+    if (processes != None):
+        for act_proc in processes:
+            mstep_db.Update_proc_to_refreshed_in_infra(infra_id, act_proc.node_id, false_true_int)
+
+def Update_proc_to_refreshed_in_infra(infra_id, node_id, false_true_int):
+    """Updates the refreshed field of one process in infrastructure to the described value.
+
+    Args:
+        infra_id (string): An infrastructure ID.
+        node_id (string): A process ID.
+        false_true_int (int): 0 for False, 1 for True.
+    """
+
+    mstep_db.Update_proc_to_refreshed_in_infra(infra_id, node_id, false_true_int)
 
 # Other
 def Infra_exists(infra_id):
@@ -466,6 +491,24 @@ def Is_infra_in_root_state(infra_id):
     else:
         return False
 
+def Is_all_process_in_infra_refreshed(infra_id):
+    """Check if every process have been refreshed at the infrastructure instance's current collective breakpoint.
+
+    Args:
+        infra_id (string): An infrastructure ID.
+    """
+
+    processes = Read_nodes_from_infra(infra_id)
+
+    all_vm_refreshed = True
+
+    for act_proc in processes:
+        if (act_proc.refreshed != 1):
+            all_vm_refreshed = False
+            break
+    
+    return all_vm_refreshed
+
 def Get_global_state_for_infra(infra_id):
     """Gets the global state for the given infrastructure.
 
@@ -473,7 +516,7 @@ def Get_global_state_for_infra(infra_id):
         infra_id (string): An infrastructure ID.
 
     Returns:
-        [type]: [description]
+        dict: A sorted dictionary containing the current breakpoints of all processes in the infrastructure.
     """
 
     node_states = defaultdict(list)
