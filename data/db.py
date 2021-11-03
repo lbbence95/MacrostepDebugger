@@ -3,7 +3,8 @@
 import logging, sqlite3, sqlalchemy
 from sqlalchemy import create_engine, Column, Integer, ForeignKey, Text, DateTime
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship
+from sqlalchemy.orm import sessionmaker, relationship, scoped_session
+from sqlalchemy.sql.expression import update
 
 #Logger setup
 logger = logging.getLogger('db')
@@ -24,7 +25,10 @@ db_conn = sqlite3.connect('data/mstepDB.db')
 Base = declarative_base()
 engine = create_engine('sqlite:///data/mstepDB.db', echo=False)
 Base.metadata.create_all(bind=engine)
-Session = sessionmaker(bind=engine)
+#Session = sessionmaker(bind=engine)
+
+session_factory = sessionmaker(bind=engine)
+Session = scoped_session(session_factory)
 
 #Models
 #Application
@@ -64,6 +68,9 @@ class Node(Base):
     move_next = Column("move_next", Integer, default=0)
     public_ip = Column("public_ip", Text, default="")
     finished = Column("finished", Integer, default=0)
+    bp_up_to_date = Column("bp_up_to_date", Integer, default=0)
+    
+    refreshed = Column("refreshed", Integer, default=0)
 
     breakpoints = relationship("Breakpoint")
 
@@ -125,6 +132,8 @@ def Initialize_db():
         move_next INTEGER DEFAULT 0,
         public_ip TEXT DEFAULT "",
         finished INTEGER DEFAULT 0,
+        bp_up_to_date INTEGER DEFAULT 0,
+        refreshed INTEGER DEFAULT 0,
         PRIMARY KEY (infra_id, node_id),
         FOREIGN KEY (infra_id) REFERENCES Infrastructure (infra_id)
     ) """)
@@ -165,7 +174,7 @@ def Register_application(new_application):
         new_application (Application): An application.
     """
 
-    sql_session = Session()
+    sql_session = Session()  
 
     try:
         sql_session.add(new_application)
@@ -174,7 +183,8 @@ def Register_application(new_application):
     except sqlalchemy.exc.IntegrityError:
         logger.info('Application "{}" ({}) already registered!'.format(new_application.app_name, new_application.orch.upper()))
     
-    sql_session.close()
+    #sql_session.close()
+    Session.remove()
 
 # Create infrastructure
 def Register_infrastructure(new_infra):
@@ -184,7 +194,7 @@ def Register_infrastructure(new_infra):
         new_infra (Infrastructure): An infrastructure.
     """
 
-    sql_session = Session()
+    sql_session = Session()  
 
     try:
         sql_session.add(new_infra)
@@ -193,7 +203,8 @@ def Register_infrastructure(new_infra):
     except sqlalchemy.exc.IntegrityError:
         logger.info('Infrastructure "{}" already registered"'.format(new_infra.infra_id))
     
-    sql_session.close()
+    #sql_session.close()
+    Session.remove()
 
 # Create node
 def Register_node(new_node):
@@ -203,7 +214,7 @@ def Register_node(new_node):
         new_node (Node): A node.
     """
 
-    sql_session = Session()
+    sql_session = Session()   
 
     try:
         sql_session.add(new_node)
@@ -212,7 +223,8 @@ def Register_node(new_node):
     except sqlalchemy.exc.IntegrityError:
         logger.info('Node "{}/{}" already registered!'.format(new_node.infra_id, new_node.node_id))
     
-    sql_session.close()
+    #sql_session.close()
+    Session.remove()
 
 # Create breakpoint
 def Register_breakpoint(new_bp):
@@ -223,7 +235,7 @@ def Register_breakpoint(new_bp):
     """
 
     sql_session = Session()
-
+    
     try:
         sql_session.add(new_bp)
         sql_session.commit()
@@ -231,7 +243,8 @@ def Register_breakpoint(new_bp):
     except sqlalchemy.exc.IntegrityError:
         logger.info('Breakpoint #{} for node "{}/{}" already registered!'.format(new_bp.bp_num, new_bp.infra_id, new_bp.node_id))
     
-    sql_session.close()
+    #sql_session.close()
+    Session.remove()
 
 
 # Read all application
@@ -244,7 +257,9 @@ def Read_all_application():
 
     sql_session = Session()
     data = sql_session.query(Application).all()
-    sql_session.close()
+    ##sql_session.close()
+    Session.remove()
+    Session.remove()
     return data
 
 # Read all infrastructure
@@ -256,8 +271,10 @@ def Read_all_infrastructure():
     """
 
     sql_session = Session()
+    
     data = sql_session.query(Infrastructure).all()
-    sql_session.close()
+    #sql_session.close()
+    Session.remove()
     return data
 
 # Read all node
@@ -269,8 +286,10 @@ def Read_all_node():
     """
 
     sql_session = Session()
+    
     data = sql_session.query(Node).all()
-    sql_session.close()
+    #sql_session.close()
+    Session.remove()
     return data
 
 # Read all breakpoint
@@ -282,8 +301,10 @@ def Read_all_breakpoint():
     """
 
     sql_session = Session()
+    
     data = sql_session.query(Breakpoint).all()
-    sql_session.close()
+    #sql_session.close()
+    Session.remove()
     return data
 
 # Update
@@ -297,9 +318,11 @@ def Update_app_root_collective_breakpoint(app_name, root_id):
     """
 
     sql_session = Session()
+    
     sql_session.query(Application).filter(Application.app_name == app_name).update({'root_coll_bp':root_id})
     sql_session.commit()
-    sql_session.close()
+    #sql_session.close()
+    Session.remove()
 
 # Update application current collective breakpoint
 def Update_app_current_collective_breakpoint(app_name, coll_bp_id):
@@ -311,9 +334,11 @@ def Update_app_current_collective_breakpoint(app_name, coll_bp_id):
     """
 
     sql_session = Session()
+    
     sql_session.query(Application).filter(Application.app_name == app_name).update({'curr_coll_bp':coll_bp_id})
     sql_session.commit()
-    sql_session.close()
+    #sql_session.close()
+    Session.remove()
 
 # Update infrastructure name
 def Update_infrastructure_name(infra_id, new_infra_name):
@@ -325,9 +350,11 @@ def Update_infrastructure_name(infra_id, new_infra_name):
     """
 
     sql_session = Session()
+    
     sql_session.query(Infrastructure).filter(Infrastructure.infra_id == infra_id).update({'infra_name':new_infra_name})
     sql_session.commit()
-    sql_session.close()
+    #sql_session.close()
+    Session.remove()
 
 def Update_instance_current_collective_breakpoint(infra_id, coll_bp_id):
     """Updates the given infrastructure's current collective breakpoint to the given collective breakpoint ID.
@@ -338,9 +365,11 @@ def Update_instance_current_collective_breakpoint(infra_id, coll_bp_id):
     """
 
     sql_session = Session()
+    
     sql_session.query(Infrastructure).filter(Infrastructure.infra_id == infra_id).update({'curr_coll_bp':coll_bp_id})
     sql_session.commit()
-    sql_session.close()
+    #sql_session.close()
+    Session.remove()
 
 
 def Update_node_permission(infra_id, node_id):
@@ -352,9 +381,11 @@ def Update_node_permission(infra_id, node_id):
     """
 
     sql_session = Session()
+    
     sql_session.query(Node).filter(Node.infra_id == infra_id, Node.node_id == node_id).update({'move_next':1})
     sql_session.commit()
-    sql_session.close()
+    #sql_session.close()
+    Session.remove()
 
 def Update_node_current_bp_and_permission(infra_id, node_id):
     """Updates a given nodes current breakpoint and it's permission.
@@ -365,9 +396,11 @@ def Update_node_current_bp_and_permission(infra_id, node_id):
     """
 
     sql_session = Session()
+    
     sql_session.query(Node).filter(Node.infra_id == infra_id, Node.node_id == node_id).update({'move_next':0, 'curr_bp': Node.curr_bp + 1})
     sql_session.commit()
-    sql_session.close()
+    #sql_session.close()
+    Session.remove()
 
 def Update_node_status_finished(infra_id, node_id):
     """Updates the given node's status as finished, meaning the node has reached its last breakpoint.
@@ -378,9 +411,11 @@ def Update_node_status_finished(infra_id, node_id):
     """
 
     sql_session = Session()
+    
     sql_session.query(Node).filter(Node.infra_id == infra_id, Node.node_id == node_id).update({'finished':1})
     sql_session.commit()
-    sql_session.close()
+    #sql_session.close()
+    Session.remove()
 
     # Check if infrastucture instance has finished
     Update_infra_status_finished(infra_id)
@@ -393,10 +428,28 @@ def Update_infra_status_finished(infra_id):
     """
 
     sql_session = Session()
+    
     nodes = list(sql_session.query(Node).filter(Node.infra_id == infra_id, Node.finished == 0))
     
     if (len(nodes) == 0):
         sql_session.query(Infrastructure).filter(Infrastructure.infra_id == infra_id).update({'finished':1})
         sql_session.commit()
 
-    sql_session.close()
+    #sql_session.close()
+    Session.remove()
+
+def Update_proc_to_refreshed_in_infra(infra_id, node_id, false_true_int):
+    """Updates the refreshed field of all process in infrastructure to the described value.
+
+    Args:
+        infra_id (string): An infrastructure ID.
+        node_id (string): A process ID.
+        false_true_int: 0 for False, 1 for True.
+    """
+
+    sql_session = Session()
+
+    sql_session.query(Node).filter(Node.infra_id == infra_id, Node.node_id == node_id).update({'refreshed':false_true_int})
+    sql_session.commit()
+
+    Session.remove()
