@@ -70,13 +70,13 @@ class OccopusHandler():
             return []
 
     def Start_infrastructure_instance(self, app):
-        """Starts an infrastructure instance using the given application.
+        """Starts an infrastructure instance using the given application and its infrastructure desciptor.
 
         Args:
             app (Application): An Application.
         
         Returns:
-            string: An instance infrastructure ID returned by Occopus.
+            string: An instance ID returned by Occopus.
         """
 
         app_file = open(app.infra_file, 'rb')
@@ -91,9 +91,9 @@ class OccopusHandler():
         try:
             response = requests.post(url=url_create_instance, data=app_file)
             instance_infra_id = response.json()['infraid']
-            logger.info('Instance created by {}: {}'.format(app.orch.upper(), instance_infra_id))
+            logger.info('Instance ID created by {}: {}'.format(app.orch.upper(), instance_infra_id))
         except requests.exceptions.ConnectionError as conn_er:
-            logger.info('Failed to establish a new connection!\r\n{}'.format(conn_er))
+            logger.info('Failed to establish connection!\r\n{}'.format(conn_er))
             sys.exit(1)
         except KeyError:
             logger.info('KeyError occured. Please check infrastructure descriptor file!')
@@ -116,7 +116,7 @@ class OccopusHandler():
             logger.info('Something went wrong. Instance may have already been destroyed.')
 
     def Check_process_states(self, app, instance_id):
-        """This function periodically checks infrastructure instance status, whether or not every VM started by the orchestrator is also registered at the debugger.
+        """This function periodically checks infrastructure instance states, whether or not every VM started by the orchestrator is also registered within the debugger.
 
         Args:
             app (Application): An Application instance.
@@ -141,7 +141,7 @@ class OccopusHandler():
                 # No VM started yet by orchestrator
                 logger.info('Waiting for "{}" to start VMs...'.format(app.orch.upper()))
             else:
-                # Some VMs have started, check if they have reported already
+                # Some VMs have started, check if they have already reported
 
                 # Get vm_names
                 vm_names = infra_status.keys()
