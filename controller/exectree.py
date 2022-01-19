@@ -118,7 +118,7 @@ def Create_collective_breakpoint(app, app_instance, process_states):
         new_node = Node("Collective_BP", app_name=app.app_name, instance_ids=json.dumps([]), node_type="alternative", prev_coll_bp=app_instance.curr_coll_bp, exhausted="No", coll_bp_id=coll_bp_id, process_states=json.dumps(process_states), collected_data=json.dumps([]))
     elif (not_finished == 1):
         # This is a deterministic state
-        new_node = Node("Collective_BP", app_name=app.app_name, instance_ids=json.dumps([]), node_type="deterministic", prev_coll_bp=app_instance.curr_coll_bp, exhausted="Yes", coll_bp_id=coll_bp_id, process_states=json.dumps(process_states), collected_data=json.dumps([]))
+        new_node = Node("Collective_BP", app_name=app.app_name, instance_ids=json.dumps([]), node_type="deterministic", prev_coll_bp=app_instance.curr_coll_bp, exhausted="No", coll_bp_id=coll_bp_id, process_states=json.dumps(process_states), collected_data=json.dumps([]))
 
     transact.create(new_node)
 
@@ -200,8 +200,6 @@ def Update_closest_alternative_coll_bp(app, curr_bp_id, final_process_states):
         final_process_states (dict): A (default)dict describing the final state of processes.
     """
 
-    #print('app root: {}'.format(app.root_coll_bp))
-
     # Get Neo4j connection details
     conn_details = Read_connection_details(silent=True)
     neo_graph = conn_details[1]
@@ -214,12 +212,20 @@ def Update_closest_alternative_coll_bp(app, curr_bp_id, final_process_states):
     is_root_or_alt = False
     if (curr_coll_bp['node_type'] == "root" or curr_coll_bp['node_type'] == "alternative"):
         is_root_or_alt = True
+    else:
+        # Set node exhausted flag and then push
+        curr_coll_bp['exhausted'] = "Yes"
+        neo_graph.push(curr_coll_bp)
 
     # Go backwards in tree until an alternative coll. bp. is found
     while (is_root_or_alt == False):
         curr_coll_bp = node_matcher.match("Collective_BP").where("_.app_name =~ '{}' AND _.coll_bp_id =~ '{}'".format(app.app_name, curr_coll_bp['prev_coll_bp'])).first()
         if (curr_coll_bp['node_type'] == "root" or curr_coll_bp['node_type'] == "alternative"):
             is_root_or_alt = True
+        else:
+            # Set node exhausted flag and then push
+            curr_coll_bp['exhausted'] = "Yes"
+            neo_graph.push(curr_coll_bp)
         
     # Get alternative coll. bp. process states and final process states to which later compare against
     alternative_processes = json.loads(curr_coll_bp['process_states'])
@@ -254,7 +260,7 @@ def Update_closest_alternative_coll_bp(app, curr_bp_id, final_process_states):
         neo_graph.push(curr_coll_bp)
         logger.info('Updated alternative coll. bp. "{}" to exhausted.'.format(curr_coll_bp['coll_bp_id']))
 
-        # If coll. bp. is root, then no need to continue updating parent nodes, since no parent node is available
+        # If coll. bp. is root, then no need to continue updating parent nodes, since no parent node exists
         if (curr_coll_bp['node_type'] != "root"):
             Update_closest_alternative_coll_bp(app, curr_coll_bp['coll_bp_id'], final_state_processes)
             return
@@ -265,7 +271,7 @@ def Update_closest_alternative_coll_bp(app, curr_bp_id, final_process_states):
 
 
 def Update_node_app_instance_ids(app, coll_bp_id, app_instance_id):
-    """Adds the given application instance ID to the given collective breakpoint's application instance IDs list.
+    """Adds the given application instance ID to the given collective breakpoint's instance IDs list.
 
     Args:
         app (Application): An Application.
