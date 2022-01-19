@@ -43,7 +43,7 @@ def List_one_application(app_name):
     application = mstep_repo.Read_given_application(app_name)
 
     if (application != None):
-        print('\r\n"{}" registered at : "{}"\r\norch.: "{}", orch. URI: "{}",\r\ninfra. descriptor: "{}"\r\n\nApp. process types: {}\r\n\nRoot ID: "{}"\r\n'
+        print('\r\n"{}" registered at : "{}"\r\norch.: "{}", orch. URI: "{}",\r\ninfra. descriptor: "{}"\r\n\nApp. process types: {}\r\n\nRoot ID: "{}"\r\nCurrent coll. bp.: "{}"\r\n'
         .format(application.app_name, application.creation_date.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3], 
         application.orch.upper(), application.orch_loc, application.infra_file, application.processes, application.root_coll_bp, application.curr_coll_bp))
 
@@ -151,6 +151,7 @@ def Print_node_details(infra_id, node_id):
         logger.info('Details for node: "{} / {}"'.format(infra_id, node_id))
         print('Infrastructure "{}"'.format(node.infra_id))
         print('Permitted: {}, Finished: {}'.format('Yes' if node.move_next == 1 else 'No', 'Yes' if node.finished == 1 else 'No'))
+        print('Registered: {}'.format(node.registered))
         print('Node public IP: "{}"'.format(node.public_ip))
 
         bps = mstep_repo.Read_given_nodes_breakpoint(infra_id, node_id)
