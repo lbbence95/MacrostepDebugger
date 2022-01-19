@@ -215,6 +215,12 @@ def Start_automatic_debug_session(app_name):
         # Application exists
         app = mstep_repo.Read_given_application(app_name)
         replay_pointer = ""
+        # In case there were previous failed runs which stopped mid-way in debugging, the replay pointer is set to the last reached collective breakpoints ID.
+        # This ID is available at the application as current collective breakpoint.
+        
+        if (app.curr_coll_bp != ""):
+            replay_pointer = app.curr_coll_bp
+
         root_exhausted = mstep_exectree.Is_app_root_exhausted(app)
 
         while (root_exhausted != True):
@@ -261,7 +267,7 @@ def Start_automatic_debug_session(app_name):
 
                 # Refresh other instances' breakpoint data
                 while (mstep_repo.Is_all_process_in_infra_refreshed(instance_id) != True):
-                    time.sleep(5)
+                    time.sleep(4)
 
                 # Check if current state already exists in exec-tree, If no, insert it
                 process_states = mstep_repo.Get_global_state_for_infra(instance_id)
@@ -281,10 +287,13 @@ def Start_automatic_debug_session(app_name):
                 mstep_repo.Update_instance_current_collective_breakpoint(instance_id, next_coll_bp_id)
                 mstep_exectree.Update_node_app_instance_ids(app, next_coll_bp_id, instance_id)
 
+                # Update application current collective breakpoint ID
+                mstep_repo.Update_app_current_collective_breakpoint(app.app_name, next_coll_bp_id)
+
                 app_instance = mstep_repo.Read_given_infrastructure(instance_id)
 
                 if (app_instance.finished == 1):
-                    finished = 1
+                    finished = True
 
             # Instance finished
             app = mstep_repo.Read_given_application(app.app_name)
@@ -294,11 +303,18 @@ def Start_automatic_debug_session(app_name):
 
             # Set replay pointer to closest, non-exhausted alternative breakpoint (this can be the root itself)
             replay_pointer = mstep_exectree.Get_closest_non_exhausted_parent(app, app_instance.curr_coll_bp, process_states)
+
+            # Update application current collective breakpoint ID
+
+            #print('\r\nTEST\r\n{}\r\n{}\r\nTEST\r\n'.format(app.app_name,replay_pointer))
+
+            mstep_repo.Update_app_current_collective_breakpoint(app.app_name, replay_pointer)
+
             Stop_debugging_infra(app.app_name, app_instance.infra_id)
 
             root_exhausted = mstep_exectree.Is_app_root_exhausted(app.app_name)
 
-            time.sleep(5)
+            time.sleep(4)
         
         logger.info('Automatic debug session finished!')
         
