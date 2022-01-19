@@ -259,7 +259,6 @@ def Read_all_application():
     data = sql_session.query(Application).all()
     ##sql_session.close()
     Session.remove()
-    Session.remove()
     return data
 
 # Read all infrastructure
