@@ -33,7 +33,7 @@ class OccopusHandler():
         try:
             infra_desc = yaml.safe_load(open(infra_file))
 
-            # Do some Occopus related checks e.g. check infra descriptor with Occopus
+            # TO-DO: Actual validation of the infrastructure descriptor file.
 
             return True
     
