@@ -29,18 +29,23 @@ def Register_new_application(app_data):
     mstep_db.Register_application(new_app)
 
 # Register new infrastructure
-def Register_new_infrastructure(app_name, infra_id):
+def Register_new_infrastructure(app_name, infra_id, is_freerun=0):
     """Registers a new infrastructure.
 
     Args:
         app_name (string): An application name.
         infra_id (string): An infrastructure ID.
+        is_freerun (int, optional): Freerun flag, 1 equals 'yes'. Defaults to 0.
     """
 
     new_infra = mstep_db.Infrastructure()
     new_infra.app_name = app_name
     new_infra.infra_id = infra_id
     new_infra.registration_date = datetime.now()
+
+    if (is_freerun == 1):
+        new_infra.is_freerun = 1
+    
     mstep_db.Register_infrastructure(new_infra)
 
 # Register new node
@@ -246,6 +251,19 @@ def Read_current_bp_num_for_node(infra_id, node_id):
     """
 
     return int(list(filter(lambda x: x.infra_id == infra_id and x.node_id == node_id, mstep_db.Read_all_node()))[0].curr_bp)
+
+#Read all breakpoint for instance
+def Read_all_breakpoint_for_instance(infra_id):
+    """Returns all breakpoints for a given infrastructure/instance.
+
+    Args:
+        infra_id (str): An infrastructure/instance ID.
+
+    Returns:
+        list: A list of Breakpoints.
+    """
+
+    return list(filter(lambda x: x.infra_id == infra_id, mstep_db.Read_all_breakpoint()))
 
 # Update
 # Update application root collective breakpoint
@@ -465,11 +483,31 @@ def Is_infra_in_consistent_global_state(infra_id):
  
     return cons_global_state
 
+def Is_instance_mode_freerun(infra_id):
+    """Checks if the given infrastructure was started in freerun mode.
+
+    Args:
+        infra_id (string): An infrastructure ID.
+
+    Returns:
+        bool: True if freerun mode is true, otherwise False.
+    """
+
+    infra = Read_given_infrastructure(infra_id)
+
+    if (infra.is_freerun == 1):
+        return True
+    else:
+        return False
+
 def Is_infra_in_root_state(infra_id):
     """Checks if the given infrastructure is in a root state or not.
 
     Args:
         infra_id (string): An infrastructure ID.
+
+    Returns:
+        bool: True if instance is in root state, otherwise False.
     """
     
     # An infrastructure is in a root state if every process is waiting for permission (processes are halted) and every process is at their first breakpoint.
