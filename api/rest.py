@@ -65,9 +65,9 @@ def Submit_breakpoint_data(infra_id, node_id):
         else:
             logger.info('Received INVALID breakpoint data from {}'.format(request.remote_addr))
         
-
-        # test: nem blokkolt futasok
-        #return jsonify({'code':200, 'message':'All OK.', 'success':True}), 200, {'ContentType':'application/json'}
+        # Free-run check
+        if (mstep_repo.Is_instance_mode_freerun(infra_id) == True):
+            return jsonify({'code':200, 'message':'All OK.', 'success':True}), 200, {'ContentType':'application/json'}
 
         return jsonify({'code':result[0], 'message':result[1], 'success':result[2]}), result[0], {'ContentType':'application/json'}
     else:
@@ -104,17 +104,18 @@ def Refresh_breakpoint_data(infraID, nodeID):
     if (valid == True):
         # The request is valid and contains the necessary data.
 
-        # TEST
-        # REFRESH HERE
+        # TO-DO: Database refresh
 
+        # TEST
         mstep_repo.Update_proc_to_refreshed_in_infra(infraID, nodeID, 1)
         print('\r\n*** Refreshed "{}"/"{}"'.format(infraID, nodeID))
         # TEST
     
     #print(request_data)
     
-    # test: nem blokkolt futasok
-    #return jsonify({'success':True, 'message':'All OK.', 'code':200}), 200, {'ContentType':'application/json'}
+    # Free-run check
+    if (mstep_repo.Is_instance_mode_freerun(infraID) == True):
+        return jsonify({'success':True, 'message':'All OK.', 'code':200}), 200, {'ContentType':'application/json'}
 
     return jsonify({'success':True, 'message':'All OK.', 'code':204}), 204, {'ContentType':'application/json'}
 
@@ -133,8 +134,9 @@ def Get_step_permission(infraID, nodeID):
 
     if (mstep_repo.Node_exists(infraID, nodeID) == True):
 
-        # test: nem blokkolt futasok
-        #return jsonify({'success':True, 'message':'All OK.', 'code':200}), 200, {'ContentType':'application/json'}
+        # Free-run check
+        if (mstep_repo.Is_instance_mode_freerun(infraID) == True):
+            return jsonify({'success':True, 'message':'All OK.', 'code':200}), 200, {'ContentType':'application/json'}
 
         if (mstep_repo.Is_infra_in_root_state(infraID) == True):
             return json.dumps({'success':True,'next':False}), 204, {'ContentType':'application/json'}
