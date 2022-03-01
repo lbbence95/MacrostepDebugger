@@ -4,7 +4,9 @@ import data.repository as mstep_repo
 import util.logger as mstep_logger
 import controller.exectree as mstep_exectree
 import controller.orchestratorhandler.orch_factory as mstep_orch_factory
-import json, logging, os.path, time, yaml
+import datetime, json, logging, os.path, time, yaml
+
+import sys
 
 #Logger setup
 logger = logging.getLogger('controller')
@@ -65,7 +67,22 @@ def Process_app_descriptor(app_desc_file):
 
                 # Terraform
                 elif (app_data['orchestrator']['type'] == 'terraform'):
-                    print('Not implemented yet.')
+                    #TO-DO: check if local or remote
+                    #TO-DO: if another local folder is selected, check its existence
+
+                    infra_folder = os.path.join('infra_defs', app_data['orchestrator']['terraform']['infra_folder'])
+                    logger.info('Valid application descriptor file!')
+
+                    # Check if infrastructure files inf older are valid
+                    if (orch.Check_infrastructure_descriptor(infra_folder) == True):
+                        logger.info('Valid infrastructure files!')
+                        infra_desc_ok = True
+                    else:
+                        raise TypeError
+
+                    infra_desc_file = infra_folder
+                    app_data['orchestrator']['terraform']['infra_file'] = ''
+
                 else:
                     print("Not implemented.")
             else:
@@ -80,16 +97,24 @@ def Process_app_descriptor(app_desc_file):
 
         if ((app_desc_ok and infra_desc_ok) == True):
             # Get process names from infrastructure descriptor
-            app_data['processes'] = json.dumps(orch.Get_processes_from_infrastructure_descriptor(infra_desc_file))
+
+            processes = orch.Get_processes_from_infrastructure_descriptor(infra_desc_file)
+
+            if (len(processes) == 0):
+                logger.warning('Error: No processes found.')
+                sys.exit(0)
+
+            #app_data['processes'] = json.dumps(orch.Get_processes_from_infrastructure_descriptor(infra_desc_file))
+            app_data['processes'] = json.dumps(processes)
 
             # Descriptors ok, register new app
             mstep_repo.Register_new_application(app_data)
-
+        
     else:
         logger.info('Given application descriptor does not exist!')
 
 
-def Start_infra_instance(app):
+def Start_infra_instance(app, freerun=0):
     """Starts an infastructure instance of the given application. This function will return after the applciation instance reached root state.
 
     Args:
@@ -97,6 +122,7 @@ def Start_infra_instance(app):
 
     Returns:
         str: The created application instance's (infrastructure's) ID. Otherwise an empty string ("").
+        freerun (int, optional): Freerun flag, 1 equals 'yes'. Defaults to 0.
     """
 
     #TO-DO: handle connection errors
@@ -109,7 +135,10 @@ def Start_infra_instance(app):
 
     if (instance_infra_id != ""):
         # Register infrastructure
-        mstep_repo.Register_new_infrastructure(app.app_name, instance_infra_id)
+        mstep_repo.Register_new_infrastructure(app.app_name, instance_infra_id, is_freerun=freerun)
+
+        if (freerun == 1):
+            return instance_infra_id
         
         # Check infra status, whether or not has every process reported
         orch_handler.Check_process_states(app, instance_infra_id)
@@ -226,14 +255,10 @@ def Start_automatic_debug_session(app_name):
         while (root_exhausted != True):
 
             app = mstep_repo.Read_given_application(app_name)
-
-            # TO-DO: check if execution tree is partially exhausted or not.
-            # TO-DO: select appropriate coll. bp. to continue automatic debugging from
         
             instance_id = ""
 
-            # Check if replay_pointer is empty or not.
-            # If it is, then start instance and exhaust an execution path
+            # Check if replay_pointer is empty or not. If it is, then start instance and exhaust an execution path
             # If pointer is not empty, replay to that state.
             if  (replay_pointer == ""):
                 instance_id = Start_infra_instance(app)           
@@ -306,8 +331,6 @@ def Start_automatic_debug_session(app_name):
 
             # Update application current collective breakpoint ID
 
-            #print('\r\nTEST\r\n{}\r\n{}\r\nTEST\r\n'.format(app.app_name,replay_pointer))
-
             mstep_repo.Update_app_current_collective_breakpoint(app.app_name, replay_pointer)
 
             Stop_debugging_infra(app.app_name, app_instance.infra_id)
@@ -321,6 +344,57 @@ def Start_automatic_debug_session(app_name):
     else:
         logger.info('Application "{}" does not exist.'.format(app_name))
 
+
+def Start_freerun_session(app_name):
+    """Starts a freerun session for the given application
+
+    Args:
+        app_name (str): An application name.
+    """
+
+    # Check if app exists
+    if (mstep_repo.App_exists(app_name) == True):
+        # Application exists
+        app = mstep_repo.Read_given_application(app_name)
+
+        # Start applciation/infrastructure instance
+        instance_id = Start_infra_instance(app, freerun=1)
+
+        logger.info('Freerun session started for application "{}".'.format(app_name))
+
+        bps_logged = []
+
+        while (mstep_repo.Read_given_infrastructure(instance_id) == None or mstep_repo.Read_given_infrastructure(instance_id).finished == 0):
+
+            time.sleep(5)
+
+            breakpoints = mstep_repo.Read_all_breakpoint_for_instance(instance_id)
+          
+            for act_logged_bp in bps_logged:
+                breakpoints = list(filter(lambda x: (x.node_id == act_logged_bp[0] and x.bp_num != act_logged_bp[1]) or
+                (x.node_id != act_logged_bp[0]), breakpoints))
+
+            for act_bp in breakpoints:
+                node = mstep_repo.Read_given_node(instance_id, act_bp.node_id)
+                bps_logged.append(tuple((act_bp.node_id, act_bp.bp_num)))
+                print('\t{}: {} ({}) reached bp. #{}'.format(act_bp.bp_reg, node.node_name, act_bp.node_id, act_bp.bp_num))
+        
+        breakpoints = mstep_repo.Read_all_breakpoint_for_instance(instance_id)
+          
+        for act_logged_bp in bps_logged:
+            breakpoints = list(filter(lambda x: (x.node_id == act_logged_bp[0] and x.bp_num != act_logged_bp[1]) or
+            (x.node_id != act_logged_bp[0]), breakpoints))
+
+        for act_bp in breakpoints:
+            node = mstep_repo.Read_given_node(instance_id, act_bp.node_id)
+            bps_logged.append(tuple((act_bp.node_id, act_bp.bp_num)))
+            print('\t{}: {} ({}) reached bp. #{}'.format(act_bp.bp_reg, node.node_name, act_bp.node_id, act_bp.bp_num))
+        
+        logger.info('Instance {} finished deployment!'.format(instance_id))
+        Stop_debugging_infra(app_name, instance_id)
+
+    else:
+        logger.info('Application "{}" does not exist.'.format(app_name))
 
 def Start_manual_debug_session(app_name):
     """Starts a manual debugging session for the given application.
@@ -658,11 +732,6 @@ def Get_process_to_step_auto_debug(app, app_instance, selection_policy="abc"):
                 if (act_proc.finished == 0):
                     test_state = json.loads(json.dumps(mstep_repo.Get_global_state_for_infra(app_instance.infra_id)))
                     test_state[act_proc.node_name][i] += 1
-
-                    #print('Curr state: {}'.format(json.loads(json.dumps(mstep_repo.Get_global_state_for_infra(app_instance.infra_id)))))
-                    #print('Test state: {}'.format(test_state))
-                    #print('Traversed states: {}'.format(traversed_states))
-                    #input('waiting...')
 
                     if (test_state not in traversed_states):
                         return act_proc.node_id
