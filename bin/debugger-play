@@ -19,12 +19,14 @@ logger.addHandler(console_handler)
 parser = argparse.ArgumentParser(description='Commands and options related to replaying an execution-path.')
 arg_group = parser.add_argument_group()
 
-
 #Option: define application
 arg_group.add_argument('-a', '--application', type=str, metavar='APPLICATION_NAME', nargs=1, required=True, help='an application name on which replaying is executed')
 
+#Option: freerun
+arg_group.add_argument('-f','--freerun', action='store_true', help='start freerun session')
+
 #Option: manual debugging
-arg_group.add_argument('-m', '--manual', action='store_true', help='manual debugging/stepping mode')
+arg_group.add_argument('-m', '--manual', action='store_true', help='manual debugging session')
 
 #Sub-option: continue manual
 arg_group.add_argument('-cm', '--continuemanual', action='store_true', help='continue debugging manually')
@@ -33,7 +35,7 @@ arg_group.add_argument('-cm', '--continuemanual', action='store_true', help='con
 arg_group.add_argument('-au', '--auto', action='store_true', help='automatic debugging mode')
 
 #Option: destroy/stop debugging
-arg_group.add_argument('-d', '--destroy', action='store_true', help='destroy infrastructure and stop debugging infrastructure')
+arg_group.add_argument('-d', '--destroy', action='store_true', help='destroy instance')
 
 #Sub-option: define infrastructure
 arg_group.add_argument('-i', '--infrastructure', type=str, metavar='INSTANCE_ID', help='an application instance ID')
@@ -49,8 +51,12 @@ if __name__ == "__main__":
     # Start instance debug
     if (args.application != None):
 
+        # Freerun session
+        if (args.freerun == True):
+            mstep_controller.Start_freerun_session(args.application[0])
+
         # Manual debugging
-        if (args.manual == True):
+        elif (args.manual == True):
             mstep_controller.Start_manual_debug_session(args.application[0])
         
         # Automatic debugging
