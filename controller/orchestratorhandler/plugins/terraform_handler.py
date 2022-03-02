@@ -1,11 +1,12 @@
 # Occopus related implementation of controller.orchestratorhandler.orchestratorhandler
 
 import data.repository as mstep_repo
-import sys, requests, os, time, yaml
+import os, re, subprocess, sys
 import logging
+from subprocess import CREATE_NO_WINDOW, PIPE, STDOUT
 
 #Logger setup
-logger = logging.getLogger('occopus_handler')
+logger = logging.getLogger('terraform_handler')
 logger.propagate = False
 logger.setLevel(logging.INFO)
 
@@ -39,8 +40,7 @@ class TerraformHandler():
             return True
         else:
             return False
-
-    
+  
     def Get_processes_from_infrastructure_descriptor(self, infra_folder):
         """Examines a given folder for VM/process names.
 
@@ -65,19 +65,39 @@ class TerraformHandler():
             return processes
 
         else:
+            logger.warning('"mstep_locals.tf" file not found.')
             return []
     
     def Start_infrastructure_instance(self, app):
-        """Starts an infrastructure instance using the given application and related ....
+        """Starts an infrastructure instance using the given application.
 
         Args:
             app (Application): An Application.
         
         Returns:
-            string: An instance ID returned created by Terraform.
+            string: An instance ID created by Terraform.
         """
 
-        return
+        infra_id = ""
+
+        logger.info('Creating instance...')
+
+        terraform_subproc = subprocess.Popen('terraform apply -auto-approve', shell=False, cwd=app.infra_file, creationflags=CREATE_NO_WINDOW, stdout=subprocess.PIPE, stderr=STDOUT)
+        
+        while True:
+            line = terraform_subproc.stdout.readline()
+            
+            if '.infra_id: Creation complete' in bytes.decode(line):
+                infra_id = re.search(r"\=.*\]", bytes.decode(line.strip())).group(0).lstrip('=').rstrip(']')
+                logger.info('Instance ID created by {}: {}'.format(app.orch.upper(), infra_id))
+                break
+            if not line: break
+
+        if infra_id == '':
+            logger.warning('Error: No ID created! Exiting...')
+            sys.exit(0)
+        
+        return infra_id
 
     def Destroy_infrastrucure_instance(self, app, instance_id):
         return
@@ -89,5 +109,8 @@ class TerraformHandler():
             app (Application): An Application instance.
             instance_id (string): An infrastructure instance ID.
         """
+
+        logger.info('Checking for root state...')
+        sys.exit(0)
 
         return
