@@ -1,7 +1,7 @@
 # Occopus related implementation of controller.orchestratorhandler.orchestratorhandler
 
 import data.repository as mstep_repo
-import os, re, subprocess, sys
+import json, os, re, subprocess, sys, time
 import logging
 from subprocess import CREATE_NO_WINDOW, PIPE, STDOUT
 
@@ -110,6 +110,35 @@ class TerraformHandler():
             instance_id (string): An infrastructure instance ID.
         """
 
+        # Check state file for (node) process IDs
+        # Collect (node) process IDs in state file
+        # Check if each process has reached its first breakpoint, aka. ready
+
+        logger.info('Waiting for Terraform to start processes (VMs)...')
+
+        process_ids = []
+        resources_list = []
+
+        while (True):
+            try:
+                tf_state_file = json.loads(open(os.path.join(app.infra_file, 'terraform.tfstate')).read())
+                resources_list = tf_state_file['resources']
+                break
+            except PermissionError:
+                time.sleep(5)
+        
+        for act_resource in resources_list:
+            try:
+                instances = act_resource['instances']
+                for act_instance in instances:
+                    process_ids.append(act_instance['attributes']['vars']['node_id'])
+            except KeyError:
+                logging.info('Key not found.')
+        
+        print(process_ids)
+
+        # Check internal database if every process is ready
+            
         logger.info('Checking for root state...')
         sys.exit(0)
 
