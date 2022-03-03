@@ -81,7 +81,7 @@ def Process_app_descriptor(app_desc_file):
                         raise TypeError
 
                     infra_desc_file = infra_folder
-                    app_data['orchestrator']['terraform']['infra_file'] = ''
+                    app_data['orchestrator']['terraform']['infra_file'] = infra_folder
 
                 else:
                     print("Not implemented.")
@@ -104,7 +104,6 @@ def Process_app_descriptor(app_desc_file):
                 logger.warning('Error: No processes found.')
                 sys.exit(0)
 
-            #app_data['processes'] = json.dumps(orch.Get_processes_from_infrastructure_descriptor(infra_desc_file))
             app_data['processes'] = json.dumps(processes)
 
             # Descriptors ok, register new app
@@ -395,6 +394,7 @@ def Start_freerun_session(app_name):
 
     else:
         logger.info('Application "{}" does not exist.'.format(app_name))
+
 
 def Start_manual_debug_session(app_name):
     """Starts a manual debugging session for the given application.
