@@ -100,6 +100,8 @@ class TerraformHandler():
         return infra_id
 
     def Destroy_infrastrucure_instance(self, app, instance_id):
+        print('Terraform infra. destroyed...')
+        sys.exit(0)
         return
     
     def Check_process_states(self, app, instance_id):
@@ -133,13 +135,31 @@ class TerraformHandler():
                 for act_instance in instances:
                     process_ids.append(act_instance['attributes']['vars']['node_id'])
             except KeyError:
-                logging.info('Key not found.')
+                pass
         
-        print(process_ids)
+        #print(process_ids)
 
-        # Check internal database if every process is ready
-            
+        # Check every process is ready
         logger.info('Checking for root state...')
-        sys.exit(0)
+        
+        #TO-DO: more info on started processes, e.g.: IDs
 
+        infra_up = False
+
+        while (infra_up == False):
+            
+            db_processes = mstep_repo.Read_nodes_from_infra(instance_id)
+            
+            if (db_processes != None):
+                db_process_ids = [proc.node_id for proc in db_processes]
+
+                for act_proc in process_ids:
+                    if act_proc not in db_process_ids:
+                        break
+                
+                    infra_up = True
+            
+            time.sleep(5)
+            
+        logger.info('Infra reached root state')
         return
