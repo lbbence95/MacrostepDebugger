@@ -104,14 +104,11 @@ def Refresh_breakpoint_data(infraID, nodeID):
     if (valid == True):
         # The request is valid and contains the necessary data.
 
-        # TO-DO: Database refresh
-
-        # TEST
         mstep_repo.Update_proc_to_refreshed_in_infra(infraID, nodeID, 1)
-        print('\r\n*** Refreshed "{}"/"{}"'.format(infraID, nodeID))
-        # TEST
-    
-    #print(request_data)
+
+        mstep_repo.Update_process_breakpoint_info(infraID, nodeID, json.dumps(request_data.get_json()))
+
+        print('\r\n*** Refreshed "{}"/"{}"\r\n'.format(infraID, nodeID))
     
     # Free-run check
     if (mstep_repo.Is_instance_mode_freerun(infraID) == True):
