@@ -435,3 +435,21 @@ def Update_proc_to_refreshed_in_infra(infra_id, node_id, false_true_int):
     sql_session.commit()
 
     Session.remove()
+
+def Update_process_breakpoint_info(infra_id, node_id, data):
+    """Updates a process's current breakpoint information.
+
+    Args:
+        infra_id (string): An infrastructure ID.
+        node_id (string): An node/process ID.
+        data (string): The received breakpoint informations in JSON.
+    """
+
+    sql_session = Session()
+
+    curr_bp = list(filter(lambda x: x.infra_id == infra_id and x.node_id == node_id, Read_all_node()))[0].curr_bp
+
+    sql_session.query(Breakpoint).filter(Breakpoint.infra_id == infra_id, Breakpoint.node_id == node_id, Breakpoint.bp_num == curr_bp).update({'bp_data': data})
+    sql_session.commit()
+
+    Session.remove()
