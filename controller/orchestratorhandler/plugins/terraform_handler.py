@@ -100,9 +100,14 @@ class TerraformHandler():
         return infra_id
 
     def Destroy_infrastrucure_instance(self, app, instance_id):
-        print('Terraform infra. destroyed...')
-        sys.exit(0)
-        return
+
+        # Issue the teardown of the infrastructure instance
+        logger.info('Destroying "{} / {}"....'.format(app.app_name, instance_id))
+
+        terraform_subproc = subprocess.run('terraform destroy -auto-approve', shell=False, cwd=app.infra_file, creationflags=CREATE_NO_WINDOW, stdout=subprocess.PIPE, stderr=STDOUT)
+
+        #TO-DO: Check if any error has occured
+        logger.info('Instance successfully destroyed!')
     
     def Check_process_states(self, app, instance_id):
         """This function periodically checks infrastructure instance states, whether or not every VM started by the orchestrator is also registered within the debugger.
@@ -136,15 +141,13 @@ class TerraformHandler():
                     process_ids.append(act_instance['attributes']['vars']['node_id'])
             except KeyError:
                 pass
-        
-        #print(process_ids)
 
         # Check every process is ready
         logger.info('Checking for root state...')
         
-        #TO-DO: more info on started processes, e.g.: IDs
-
         infra_up = False
+        db_processes = []
+
 
         while (infra_up == False):
             
@@ -160,6 +163,15 @@ class TerraformHandler():
                     infra_up = True
             
             time.sleep(5)
+        
+        #TO-DO: more info on started processes, e.g.: IDs
             
-        logger.info('Infra reached root state')
+        logger.info('Instance reached root state!')
+        logger.info('Running processes:\r\n')
+
+        for act_proc in db_processes:
+            print('\t "{}" ("{}")'.format(act_proc.node_name, act_proc.node_id))
+
+        print('')
+
         return
