@@ -191,7 +191,7 @@ def Read_nodes_from_infra(infra_id):
         infra_id (string): An infrastructure ID.
 
     Returns:
-        list: A list of nodes ordered by node_id.
+        list: A list of nodes ordered by node_id. NoneType if no nodes exist.
     """
 
     nodes = list(filter(lambda x: x.infra_id == infra_id, mstep_db.Read_all_node()))
@@ -373,6 +373,17 @@ def Update_proc_to_refreshed_in_infra(infra_id, node_id, false_true_int):
     """
 
     mstep_db.Update_proc_to_refreshed_in_infra(infra_id, node_id, false_true_int)
+
+def Update_process_breakpoint_info(infra_id, node_id, data):
+    """Updates a process's current breakpoint information.
+
+    Args:
+        infra_id (string): An infrastructure ID.
+        node_id (string): An node/process ID.
+        data (string): The received breakpoint informations in JSON.
+    """
+
+    mstep_db.Update_process_breakpoint_info(infra_id, node_id, data)
 
 # Other
 def Infra_exists(infra_id):
