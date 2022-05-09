@@ -1,7 +1,7 @@
 # Occopus related implementation of controller.orchestratorhandler.orchestratorhandler
 
 import data.repository as mstep_repo
-import sys, requests, time, yaml
+import sys, re, requests, time, yaml
 import logging
 
 #Logger setup
@@ -19,6 +19,7 @@ class OccopusHandler():
 
     def __init__(self, orch_type):
         self.orch_type = orch_type
+        self.app_regex = re.compile(".*\{getprivip\(.*\)\}.*")
 
     def Check_infrastructure_descriptor(self, infra_file):
         """Checks and validates a given infrastructure descriptor.
