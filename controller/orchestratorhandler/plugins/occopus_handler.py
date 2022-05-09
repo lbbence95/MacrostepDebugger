@@ -99,7 +99,7 @@ class OccopusHandler():
             logger.info('KeyError occured. Please check infrastructure descriptor file!')
             sys.exit(1)
 
-        return instance_infra_id
+        return str(instance_infra_id)
 
     def Destroy_infrastrucure_instance(self, app, instance_id):
         
