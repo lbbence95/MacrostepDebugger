@@ -2,6 +2,14 @@ import controller.orchestratorhandler.plugins.occopus_handler as occopus_handler
 import controller.orchestratorhandler.plugins.terraform_handler as terraform_handler
 
 def GetOrchHandler(orch_type):
+    """Returns and orchestrator handler of the given type.
+
+    Args:
+        orch_type (string): An orchestrator name, e.g. Occopus, or Terraform.
+
+    Returns:
+        OrchestratorHandler: An orchestrator handler of the given type.
+    """
 
     orch_name = orch_type.lower()
 
