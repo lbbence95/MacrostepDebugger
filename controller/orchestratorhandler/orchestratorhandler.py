@@ -1,9 +1,12 @@
 # Abstract description of orchestrator handler functionalities.
 
+import re
+
 class OrchestratorHandler():
 
     def __init__(self, orch_type):
         self.orch_type = orch_type
+        self.app_regex = re.compile("")
 
     def Check_infrastructure_descriptor(self, infra_desc):
         """Upon registering a new application, the included infrastructure descriptor file(s) have to be validated.
