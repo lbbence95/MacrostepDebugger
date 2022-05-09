@@ -20,6 +20,7 @@ class TerraformHandler():
     
     def __init__(self, orch_type):
         self.orch_type = orch_type
+        self.app_regex = re.compile(".*\${.*private_ip\}.*")
 
     def Check_infrastructure_descriptor(self, infra_folder):
         """
