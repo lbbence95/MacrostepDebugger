@@ -32,6 +32,12 @@ def Register_new_application(app_data):
     new_app.orch_loc = app_data['orchestrator']['url']
     new_app.processes = app_data['processes']
     new_app.creation_date = datetime.now()
+
+    # TO-DO: use abstract fields for graph-database authentication
+    new_app.host = app_data['exec-tree']['auth']['host']
+    new_app.user = app_data['exec-tree']['auth']['user']
+    new_app.password = app_data['exec-tree']['auth']['password']
+
     mstep_db.Register_application(new_app)
 
 # Register new infrastructure
