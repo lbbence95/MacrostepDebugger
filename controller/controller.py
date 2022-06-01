@@ -34,6 +34,7 @@ def Process_app_descriptor(app_desc_file):
         # File exists, check for proper format and keys
         app_desc_ok = False
         infra_desc_ok = False
+        exec_tree_ok = False
         app_data = None
         infra_desc_file = None
 
@@ -41,7 +42,7 @@ def Process_app_descriptor(app_desc_file):
             app_data = yaml.safe_load(open(app_desc))
             
             # Check needed keys in app descriptor
-            if all (k in app_data for k in ("application_name", "orchestrator")):
+            if all (k in app_data for k in ("application_name", "orchestrator", "exec-tree")):
                 
                 # Check for URL
                 if ("url" not in app_data["orchestrator"]):
@@ -55,7 +56,7 @@ def Process_app_descriptor(app_desc_file):
                 if (app_data['orchestrator']['type'] == 'occopus'):
 
                     infra_desc_file = os.path.join('infra_defs', app_data['orchestrator']['occopus']['infra_file'])
-                    logger.info('Valid application descriptor file!')
+                    #logger.info('Valid application descriptor file!')
 
                     # Check if infrastructure file is valid
                     if (orch.Check_infrastructure_descriptor(infra_desc_file) == True):
@@ -71,7 +72,7 @@ def Process_app_descriptor(app_desc_file):
                     #TO-DO: if another local folder is selected, check its existence
 
                     infra_folder = os.path.join('infra_defs', app_data['orchestrator']['terraform']['infra_folder'])
-                    logger.info('Valid application descriptor file!')
+                    #logger.info('Valid application descriptor file!')
 
                     # Check if infrastructure files inf older are valid
                     if (orch.Check_infrastructure_descriptor(infra_folder) == True):
@@ -82,9 +83,31 @@ def Process_app_descriptor(app_desc_file):
 
                     infra_desc_file = infra_folder
                     app_data['orchestrator']['terraform']['infra_file'] = infra_folder
+                
+                else:
+                    print("Not implemented.")
+
+                # Check exec tree keys
+                # Neo4j
+                if (app_data['exec-tree']['type'] == "neo4j"):
+                    neo4j_user = app_data['exec-tree']['auth']['user']
+                    neo4j_host = app_data['exec-tree']['auth']['host']
+                    neo4j_pw = app_data['exec-tree']['auth']['password']
+
+                    if (neo4j_host != "" and neo4j_user != "" and neo4j_pw != ""):
+                        exec_tree_ok = True
 
                 else:
                     print("Not implemented.")
+
+                # Check exec-tree mode
+                exec_tree_mode = app_data['exec-tree']['mode']
+
+                if (exec_tree_mode == "tree"):
+                    exec_tree_ok = True
+                else:
+                    exec_tree_ok = False
+                    
             else:
                 raise KeyError               
 
@@ -95,8 +118,9 @@ def Process_app_descriptor(app_desc_file):
         except TypeError:
             logger.info('Invalid infrastructure descriptor file!')
 
-        if ((app_desc_ok and infra_desc_ok) == True):
+        if ((app_desc_ok and infra_desc_ok and exec_tree_ok) == True):
             # Get process names from infrastructure descriptor
+            logger.info('Valid application descriptor file!')
 
             processes = orch.Get_processes_from_infrastructure_descriptor(infra_desc_file)
 
@@ -108,6 +132,8 @@ def Process_app_descriptor(app_desc_file):
 
             # Descriptors ok, register new app
             mstep_repo.Register_new_application(app_data)
+        else:
+            logger.info('Invalid application descriptor file! Please check keys and values!')
         
     else:
         logger.info('Given application descriptor does not exist!')
