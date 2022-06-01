@@ -83,8 +83,12 @@ class TerraformHandler():
 
         logger.info('Creating instance...')
 
+        #TO-DO: platform dependent code / independent instruction
+        # Linux
+        # terraform_subproc = subprocess.Popen('terraform apply -auto-approve', shell=True, cwd=app.infra_file, stdout=subprocess.PIPE, stderr=STDOUT)
+        # Win
         terraform_subproc = subprocess.Popen('terraform apply -auto-approve', shell=False, cwd=app.infra_file, creationflags=CREATE_NO_WINDOW, stdout=subprocess.PIPE, stderr=STDOUT)
-        
+
         while True:
             line = terraform_subproc.stdout.readline()
             
@@ -105,6 +109,10 @@ class TerraformHandler():
         # Issue the teardown of the infrastructure instance
         logger.info('Destroying "{} / {}"....'.format(app.app_name, instance_id))
 
+        #TO-DO: platform dependent code / independent instruction
+        # Linux
+        # terraform_subproc = subprocess.run('terraform destroy -auto-approve', shell=True, cwd=app.infra_file, stdout=subprocess.PIPE, stderr=STDOUT)
+        # Win
         terraform_subproc = subprocess.run('terraform destroy -auto-approve', shell=False, cwd=app.infra_file, creationflags=CREATE_NO_WINDOW, stdout=subprocess.PIPE, stderr=STDOUT)
 
         #TO-DO: Check if any error has occured
@@ -151,7 +159,7 @@ class TerraformHandler():
 
 
         while (infra_up == False):
-            
+
             db_processes = mstep_repo.Read_nodes_from_infra(instance_id)
             
             if (db_processes != None):
