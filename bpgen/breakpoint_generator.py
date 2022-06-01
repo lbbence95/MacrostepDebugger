@@ -1,12 +1,9 @@
 # Represents the controller module of the debugger
 
-from queue import Empty
 import data.repository as mstep_repo
 import util.logger as mstep_logger
 import controller.orchestratorhandler.orch_factory as mstep_orch_factory
-import datetime, json, logging, os.path, re, shutil, time, yaml
-
-import sys
+import logging, os.path, re, shutil
 
 #Logger setup
 logger = logging.getLogger('controller')
