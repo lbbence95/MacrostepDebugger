@@ -41,6 +41,10 @@ class Application(Base):
     curr_coll_bp = Column('curr_coll_bp', Text, nullable=False, default="")
     root_coll_bp = Column('root_coll_bp', Text, nullable=False, default="")
 
+    host = Column('host', Text, nullable=False, default="")
+    user = Column('user', Text, nullable=False, default="")
+    password = Column('password', Text, nullable=False, default="")
+
     infra_instances = relationship("Infrastructure")
 
 #Infrastructure
@@ -101,7 +105,10 @@ def Initialize_db():
         orch TEXT NOT NULL,
         orch_loc TEXT NOT NULL,
         curr_coll_bp TEXT NOT NULL DEFAULT "",
-        root_coll_bp TEXT NOT NULL DEFAULT ""
+        root_coll_bp TEXT NOT NULL DEFAULT "",
+        host TEXT NOT NULL DEFAULT "",
+        user TEXT NOT NULL DEFAULT "",
+        password TEXT NOT NULL DEFAULT ""
     )""")
 
     # Infrastructures
