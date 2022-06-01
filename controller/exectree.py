@@ -16,10 +16,11 @@ console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 
 
-def Read_connection_details(silent=False):
+def Read_connection_details(app, silent=False):
     """Reads connection details from 'controller/neo4j_conn.yaml'.
 
     Args:
+        app (Application): An Application instance.
         silent (bool, optional): Suppress console messages if conenction is OK. Defaults to False.
 
     Returns:
@@ -30,11 +31,18 @@ def Read_connection_details(silent=False):
     conn_details = {}
 
     try:
-        neo4j_cfg = yaml.safe_load(open(os.path.join('controller','neo4j_conn.yaml')))
+        # TO-DO: Use an Application instance to get connection details
 
-        conn_details['host'] = neo4j_cfg['host'] 
-        conn_details['user'] = neo4j_cfg['user']
-        conn_details['password'] = neo4j_cfg['password']
+        #neo4j_cfg = yaml.safe_load(open(os.path.join('controller','neo4j_conn.yaml')))
+
+        #conn_details['host'] = neo4j_cfg['host'] 
+        #conn_details['user'] = neo4j_cfg['user']
+        #conn_details['password'] = neo4j_cfg['password']
+
+        #TO-DO: use abstract graph-database authentication data
+        conn_details['host'] = app.host
+        conn_details['user'] = app.user
+        conn_details['password'] = app.password
 
         neo_graph = Graph(conn_details['host'], user=conn_details['user'], password=conn_details['password'], secure=False)
         if (silent == False):
@@ -69,7 +77,7 @@ def Create_root(app, infra_id, process_states):
         string: A UUID in string, the root collective breakpoint.
     """
 
-    conn_details = Read_connection_details(silent=True)
+    conn_details = Read_connection_details(app, silent=True)
     neo_graph = conn_details[1]
  
     root_id = str(uuid.uuid4())
@@ -96,10 +104,10 @@ def Create_collective_breakpoint(app, app_instance, process_states):
         process_states (dict): A dictionary defining the state of each process in the instance.
 
     Returns:
-        str: The newly created collective breakpoints ID.
+        str: The newly created collective breakpoint's ID.
     """
 
-    conn_details = Read_connection_details(silent=True)
+    conn_details = Read_connection_details(app, silent=True)
     neo_graph = conn_details[1]
     node_matcher = NodeMatcher(neo_graph)
 
@@ -164,7 +172,7 @@ def Get_closest_non_exhausted_parent(app, curr_bp_id, final_process_states):
 
 
     # Get Neo4j connection details
-    conn_details = Read_connection_details(silent=True)
+    conn_details = Read_connection_details(app, silent=True)
     neo_graph = conn_details[1]
     node_matcher = NodeMatcher(neo_graph)
 
@@ -201,7 +209,7 @@ def Update_closest_alternative_coll_bp(app, curr_bp_id, final_process_states):
     """
 
     # Get Neo4j connection details
-    conn_details = Read_connection_details(silent=True)
+    conn_details = Read_connection_details(app, silent=True)
     neo_graph = conn_details[1]
     node_matcher = NodeMatcher(neo_graph)
 
@@ -279,7 +287,7 @@ def Update_node_app_instance_ids(app, coll_bp_id, app_instance_id):
         app_instance_id (string): An application instance ID to store.
     """
 
-    conn_details = Read_connection_details(silent=True)
+    conn_details = Read_connection_details(app, silent=True)
     neo_graph = conn_details[1]
     node_matcher = NodeMatcher(neo_graph)
 
@@ -311,7 +319,9 @@ def Is_app_root_exhausted(app_name):
         bool: True if root is exhausted, False if not.
     """
 
-    conn_details = Read_connection_details(silent=True)
+    #app = mstep_repo.Read_given_application(app_name)
+
+    conn_details = Read_connection_details(app_name, silent=True)
     neo_graph = conn_details[1]
     node_matcher = NodeMatcher(neo_graph)
 
@@ -337,7 +347,7 @@ def Does_current_state_exist(app, app_instance, process_states):
         string: An empty string if the given state does not exist, otherwise the collective breakpoint's ID.
     """
     
-    conn_details = Read_connection_details(silent=True)
+    conn_details = Read_connection_details(app, silent=True)
     neo_graph = conn_details[1]
     node_matcher = NodeMatcher(neo_graph)
 
@@ -366,7 +376,7 @@ def Get_list_of_children_nodes(app, coll_bp_id):
     """
 
     # Get Neo4j database connection details
-    conn_details = Read_connection_details(silent=True)
+    conn_details = Read_connection_details(app, silent=True)
     neo_graph = conn_details[1]
     node_matcher = NodeMatcher(neo_graph)
 
@@ -392,7 +402,7 @@ def Does_coll_bp_exist(app, coll_bp_id):
     """
 
     # Get Neo4j database connection details
-    conn_details = Read_connection_details(silent=True)
+    conn_details = Read_connection_details(app, silent=True)
     neo_graph = conn_details[1]
 
     node_matcher = NodeMatcher(neo_graph)
@@ -418,7 +428,7 @@ def Get_process_states_of_coll_bp(app, coll_bp_id):
     if (Does_coll_bp_exist(app, coll_bp_id) == True):
 
         # Get Neo4j database connection details
-        conn_details = Read_connection_details(silent=True)
+        conn_details = Read_connection_details(app, silent=True)
         neo_graph = conn_details[1]
 
         node_matcher = NodeMatcher(neo_graph)
@@ -438,7 +448,7 @@ def Get_root_id_for_application(app):
     """
 
     # Get Neo4j database connection details
-    conn_details = Read_connection_details(silent=True)
+    conn_details = Read_connection_details(app, silent=True)
     neo_graph = conn_details[1]
 
     node_matcher = NodeMatcher(neo_graph)
@@ -469,7 +479,7 @@ def Get_next_coll_bp_id_to_target(app, start_coll_bp_id, target_coll_bp_id):
         return app.root_coll_bp
     else:
         # Get Neo4j database connection details
-        conn_details = Read_connection_details(silent=True)
+        conn_details = Read_connection_details(app, silent=True)
         neo_graph = conn_details[1]
 
         node_matcher = NodeMatcher(neo_graph)
