@@ -47,6 +47,12 @@ def List_one_application(app_name):
         .format(application.app_name, application.creation_date.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3], 
         application.orch.upper(), application.orch_loc, application.infra_file, application.processes, application.root_coll_bp, application.curr_coll_bp))
 
+        #TEST
+        #print(application.host)
+        #print(application.user)
+        #print(application.password)
+        #TEST
+
         # TO-DO: list instance informations as well
 
         infra_instances = mstep_repo.Read_all_instance_for_given_application(app_name)
