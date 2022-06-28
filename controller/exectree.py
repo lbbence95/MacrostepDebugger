@@ -310,22 +310,22 @@ def Update_node_app_instance_ids(app, coll_bp_id, app_instance_id):
     neo_graph.push(coll_bp_to_update)
 
 
-def Is_app_root_exhausted(app_name):
+def Is_app_root_exhausted(app):
     """Decides if the given application's root collective breakpoint is exhausted or not.
 
     Args:
-        app_name (str): An application name.
+        app (Application): An Application instance.
     Returns:
         bool: True if root is exhausted, False if not.
     """
 
     #app = mstep_repo.Read_given_application(app_name)
 
-    conn_details = Read_connection_details(app_name, silent=True)
+    conn_details = Read_connection_details(app, silent=True)
     neo_graph = conn_details[1]
     node_matcher = NodeMatcher(neo_graph)
 
-    root_node = node_matcher.match('Collective_BP').where("_.app_name =~ '{}' AND _.node_type =~ '{}'".format(app_name, "root")).first()
+    root_node = node_matcher.match('Collective_BP').where("_.app_name =~ '{}' AND _.node_type =~ '{}'".format(app.app_name, "root")).first()
 
     if (root_node == None):
         return False
