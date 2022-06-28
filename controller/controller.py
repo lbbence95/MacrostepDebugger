@@ -360,7 +360,7 @@ def Start_automatic_debug_session(app_name):
 
             Stop_debugging_infra(app.app_name, app_instance.infra_id)
 
-            root_exhausted = mstep_exectree.Is_app_root_exhausted(app.app_name)
+            root_exhausted = mstep_exectree.Is_app_root_exhausted(app)
 
             time.sleep(4)
         
