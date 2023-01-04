@@ -1,5 +1,7 @@
 # Represents the controller module of the debugger
 
+from multiprocessing.connection import wait
+from jmespath import search
 import data.repository as mstep_repo
 import util.logger as mstep_logger
 import controller.orchestratorhandler.orch_factory as mstep_orch_factory
@@ -72,29 +74,31 @@ def Generate_breakpoints(app_name):
                     # Communication points in runcmdsection
                     comm_points_lines = [x for x in [i for i, act_line in enumerate(contents) if re.search(orch_handler.app_regex, act_line)] if x > run_cmd_line]
 
-                    # Insert breakpoints
-                    contents.insert(run_cmd_line + 3, "- /tmp/MSTEP_BP.sh first\n")
+                    # First breakpoint after 'jq' has been installed
+                    jq_line = [x for x in [i for i, act_line in enumerate(contents) if re.search(re.compile('.*install jq.*'), act_line)] if x > run_cmd_line][0]
+
+                    contents.insert(jq_line + 1, "- /tmp/MSTEP_BP.sh first\n")
 
                     if (len(comm_points_lines) != 0):
                         
                         bp_num = 2
 
                         for act_comm_line in comm_points_lines:
+
                             contents.insert(act_comm_line + bp_num, "- /tmp/MSTEP_BP.sh bp_{}\n".format(bp_num))
 
                             bp_num += 1
-                        
+                    
                     if ("MSTEP_BP.sh" in contents[-1]):
                         contents[-1] = "- /tmp/MSTEP_BP.sh last last_bp\n"
                     else:
                         contents.append("- /tmp/MSTEP_BP.sh last last_bp\n")
-                            
+                    
                     with open(generated_file, "w") as f:
                         contents = "".join(contents)
                         f.write(contents)
 
         else:
             logger.warning('Directory "context" for application "{}" does not exist.'.format(app.app_name))
-
     else:
         logger.info('Application "{}" does not exist.'.format(app_name))
