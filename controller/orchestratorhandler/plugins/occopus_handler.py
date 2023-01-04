@@ -2,7 +2,7 @@
 
 import data.repository as mstep_repo
 import sys, re, requests, time, yaml
-import logging
+import json, logging
 
 #Logger setup
 logger = logging.getLogger('occopus_handler')
@@ -89,6 +89,7 @@ class OccopusHandler():
         response = None
         instance_infra_id = ""
 
+        #TO-DO: handle connection errors
         try:
             response = requests.post(url=url_create_instance, data=app_file)
             instance_infra_id = response.json()['infraid']
@@ -99,6 +100,10 @@ class OccopusHandler():
         except KeyError:
             logger.info('KeyError occured. Please check infrastructure descriptor file!')
             sys.exit(1)
+        except json.decoder.JSONDecodeError:
+            logger.info('An error has occured.')
+            sys.exit(1)
+
 
         return str(instance_infra_id)
 
@@ -127,7 +132,8 @@ class OccopusHandler():
         url_status = app.orch_loc + '/infrastructures/' + instance_id
 
         # Contains process (aka. VMs) of the infrastructure instance
-        # This dict is representing VMs. Each VM has a node ID and whether or not it has already reported.
+        # This dict represents VMs. Each VM has a node ID and whether or not it has already reported.
+
         processes = {}
         infra_up = False
 
@@ -144,27 +150,35 @@ class OccopusHandler():
             else:
                 # Some VMs have started, check if they have already reported
 
-                # Get vm_names
                 vm_names = infra_status.keys()
 
-                #Iterate over the different type of VMs
                 for act_vm_name in vm_names:
+
                     act_vm_ids = list(infra_status[act_vm_name]['instances'].keys())
-
-                    #Iterate over each VM ID from that type
                     for vm_id in act_vm_ids:
-
-                        #Store if actual VM already exists or not (aka. reported to the debugger)
                         processes[vm_id] = mstep_repo.Node_exists(instance_id, vm_id)
                         logger.info('Waiting for VM: {} ("{}"), ready: {}'.format(vm_id, act_vm_name, 'Yes' if processes[vm_id] == True else 'No'))
 
-                # Check if every VM is ready
+                
                 infra_up = True
-
+                
+                # Check if every VM is ready
                 for act_vm_id in processes:
                     if (processes[act_vm_id] == False):
                         infra_up = False
                         break
+                
+                time.sleep(3)
+
+                infra_status = requests.get(url=url_status).json()
+                vm_names = infra_status.keys()
+                for act_vm_name in vm_names:
+                    act_vm_ids = list(infra_status[act_vm_name]['instances'].keys())
+                    for vm_id in act_vm_ids:
+                        processes[vm_id] = mstep_repo.Node_exists(instance_id, vm_id)
+                        if (processes[vm_id] == False):
+                            infra_up = False
+                            break
 
             if (infra_up == True):
                 #Instance up and running
@@ -172,4 +186,4 @@ class OccopusHandler():
                 logger.info('All processes in "{} / {}" are running.'.format(app.app_name, instance_id))
             else:
                 #Instance not fully deployed, wait
-                time.sleep(7)
+                time.sleep(3)
