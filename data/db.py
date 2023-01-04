@@ -45,6 +45,8 @@ class Application(Base):
     user = Column('user', Text, nullable=False, default="")
     password = Column('password', Text, nullable=False, default="")
 
+    app_desc_file = Column('app_desc_file', nullable=False, default="")
+
     infra_instances = relationship("Infrastructure")
 
 #Infrastructure
@@ -108,7 +110,8 @@ def Initialize_db():
         root_coll_bp TEXT NOT NULL DEFAULT "",
         host TEXT NOT NULL DEFAULT "",
         user TEXT NOT NULL DEFAULT "",
-        password TEXT NOT NULL DEFAULT ""
+        password TEXT NOT NULL DEFAULT "",
+        app_desc_file TEXT NOT NULL DEFAULT ""
     )""")
 
     # Infrastructures
