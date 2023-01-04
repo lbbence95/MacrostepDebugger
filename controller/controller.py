@@ -4,7 +4,9 @@ import data.repository as mstep_repo
 import util.logger as mstep_logger
 import controller.exectree as mstep_exectree
 import controller.orchestratorhandler.orch_factory as mstep_orch_factory
-import datetime, json, logging, os.path, time, yaml
+import datetime, itertools, json, logging, os.path, time, yaml
+
+import traceback
 
 import sys
 
@@ -107,14 +109,31 @@ def Process_app_descriptor(app_desc_file):
                     exec_tree_ok = True
                 else:
                     exec_tree_ok = False
-                    
+
+                # Check specification
+                specification = app_data['specification']
+
+                for act_proc_name, variables_list in specification.items():
+                    for act_variable in variables_list:
+                        if ('name' not in act_variable['variable'] or 'expected' not in act_variable['variable']):
+                            raise KeyError
+                        
+                        #print("{}: {} is to be {}".format(act_proc_name, act_variable['variable']['name'], act_variable['variable']['expected']['exactly']))
+
+                    #     #             act_proc_counter = 1
+
+                    #     #             if act_proc[act_proc_counter]["userData"][]
+
+                    #     #         num_of_act_proc_name = len(new_data[app_instance_id][act_specification_proc_name].items())
+
             else:
                 raise KeyError               
 
         except yaml.scanner.ScannerError:
             logger.info('Invalid YAML application descriptor file!')
+            app_desc_ok = False
         except KeyError:
-            logger.info('Invalid application descriptor file! Please check keys!')
+            app_desc_ok = False
         except TypeError:
             logger.info('Invalid infrastructure descriptor file!')
 
@@ -129,9 +148,11 @@ def Process_app_descriptor(app_desc_file):
                 sys.exit(0)
 
             app_data['processes'] = json.dumps(processes)
+            app_data['app_desc_file'] = app_desc
 
             # Descriptors ok, register new app
             mstep_repo.Register_new_application(app_data)
+
         else:
             logger.info('Invalid application descriptor file! Please check keys and values!')
         
@@ -491,7 +512,7 @@ def Start_manual_debug_session(app_name):
                 logger.info('Current state already exists ({}).'.format(next_coll_bp_id))
             else:
                 # Current state does not exist in the execution tree, insert new collective breakpoint
-                next_coll_bp_id = mstep_exectree.Create_collective_breakpoint(app, app_instance, process_states)
+                next_coll_bp_id = mstep_exectree.Create_collective_breakpoint(app, app_instance, process_states, satisfies_specification=False)
                 logger.info('Current state does not exist in execution tree, new collective breakpoint created ({}).'.format(next_coll_bp_id))
 
                 # Check for final state
@@ -511,6 +532,7 @@ def Start_manual_debug_session(app_name):
         logger.info('Instance {} finished deployment!'.format(instance_id))
 
         Stop_debugging_infra(app.app_name, instance_id)
+
     else:
         logger.info('Application "{}" does not exist.'.format(app_name))
 
