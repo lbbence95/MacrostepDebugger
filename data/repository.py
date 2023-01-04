@@ -22,7 +22,8 @@ def Register_new_application(app_data):
     new_app = mstep_db.Application()
     new_app.app_name = app_data['application_name']
     new_app.orch = app_data['orchestrator']['type'].lower()
-    new_app.infra_file == ''
+    new_app.infra_file = ''
+    new_app.app_desc_file = app_data['app_desc_file']
 
     if (new_app.orch == 'occopus'):
         new_app.infra_file = os.path.join('infra_defs', app_data['orchestrator'][new_app.orch]['infra_file'])
