@@ -4,6 +4,8 @@ import data.repository as mstep_repo
 from py2neo import Graph, Node, Relationship, NodeMatcher
 import uuid, json, logging, os.path, yaml
 
+import traceback
+
 #Logger setup
 logger = logging.getLogger('exectree')
 logger.propagate = False
@@ -95,7 +97,7 @@ def Create_root(app, infra_id, process_states):
     return root_id
 
 
-def Create_collective_breakpoint(app, app_instance, process_states):
+def Create_collective_breakpoint(app, app_instance, process_states, satisfies_specification=False):
     """Inserts a new collective breakpoint into the application's execution tree.
 
     Args:
@@ -279,7 +281,7 @@ def Update_closest_alternative_coll_bp(app, curr_bp_id, final_process_states):
 
 
 def Update_node_app_instance_ids(app, coll_bp_id, app_instance_id):
-    """Adds the given application instance ID to the given collective breakpoint's instance IDs list.
+    """Adds the given application instance ID to the given collective breakpoint's instance IDs list. Also appends new collected data to the node, using the given instance ID as the (sub)key.
 
     Args:
         app (Application): An Application.
@@ -307,6 +309,52 @@ def Update_node_app_instance_ids(app, coll_bp_id, app_instance_id):
     collected_data.append(new_data)
 
     coll_bp_to_update['collected_data'] = json.dumps(collected_data)
+
+
+    #TEST
+    # Check if state satisfies specification
+    specification = ""
+    global_state = {}
+
+    try:
+        specification = yaml.safe_load(open(app.app_desc_file, 'r'))['specification']
+
+        for act_proc_name, variables_list in specification.items():
+
+            global_state[act_proc_name] = {}
+
+            num_of_act_proc_name = len( new_data[app_instance_id][act_proc_name].items() )
+
+            i = 0
+            while (i < num_of_act_proc_name):
+                global_state[act_proc_name][i + 1] = {}
+                i += 1
+
+            #print(f'Found {num_of_act_proc_name} such named process(es) to evaluate.')
+
+            for act_variable in variables_list:
+                i = 0
+                
+                variable_name = act_variable["variable"]["name"]
+                #print("{}: {} is to be {}".format(act_proc_name, variable_name, act_variable['variable']['expected']['exactly']))
+
+                while (i < num_of_act_proc_name):
+                    if ( variable_name in new_data[app_instance_id][act_proc_name][i + 1]['userData'].keys() ):
+                        print(f'Can evalute {variable_name} for process {act_proc_name}[{i + 1}]')
+                        #TO-DO: evaluate
+                    else:
+                        print(f'Can not evalute {variable_name} for process {act_proc_name}[{i + 1}]')
+
+                    global_state[act_proc_name][i + 1][variable_name] = False
+                    i += 1
+
+    except Exception:
+        tb = traceback.format_exc()
+        print('An error has occured...\r\n{}\r\n'.format(tb))
+        pass
+        
+    print(global_state)
+
     neo_graph.push(coll_bp_to_update)
 
 
@@ -441,7 +489,7 @@ def Get_root_id_for_application(app):
     """Returns the root collective breakpoints ID for the given application.
 
     Args:
-        app (Apllication): An Application isntance.
+        app (Apllication): An Application instance.
 
     Returns:
         string: The root ID ot an empty string ("") if it does not exist.
@@ -453,7 +501,13 @@ def Get_root_id_for_application(app):
 
     node_matcher = NodeMatcher(neo_graph)
 
-    root_node = node_matcher.match("Collective_BP").where("_.app_name =~ '{}' AND _.node_type =~ '{}'".format(app.app_name, "root")).first()
+    root_node = None
+
+    try:
+        root_node = node_matcher.match("Collective_BP").where("_.app_name =~ '{}' AND _.node_type =~ '{}'".format(app.app_name, "root")).first()
+    except AttributeError:
+        # No root found
+        pass
 
     # Root exists
     if (root_node != None):
@@ -462,6 +516,7 @@ def Get_root_id_for_application(app):
         return ""
 
 def Get_next_coll_bp_id_to_target(app, start_coll_bp_id, target_coll_bp_id):
+
     """Gets the next collective breakpoint ID that leads to the given targeted collective breakpoint from the current collective breakpoint.
 
     Args:
