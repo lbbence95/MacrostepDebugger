@@ -43,15 +43,9 @@ def List_one_application(app_name):
     application = mstep_repo.Read_given_application(app_name)
 
     if (application != None):
-        print('\r\n"{}" registered at : "{}"\r\norch.: "{}", orch. URI: "{}",\r\ninfra. descriptor: "{}"\r\n\nApp. process types: {}\r\n\nRoot ID: "{}"\r\nCurrent coll. bp.: "{}"\r\n'
-        .format(application.app_name, application.creation_date.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3], 
+        print('\r\n"{}" registered at : "{}"\r\nApplication descriptor file: {}\r\n\nOrchestrator: "{}"\r\nOrch. URI: "{}"\r\n\nInfra. descriptor: "{}"\r\n\nApp. process types: {}\r\n\nRoot ID: "{}"\r\nCurrent coll. bp.: "{}"\r\n'
+        .format(application.app_name, application.creation_date.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3], application.app_desc_file, 
         application.orch.upper(), application.orch_loc, application.infra_file, application.processes, application.root_coll_bp, application.curr_coll_bp))
-
-        #TEST
-        #print(application.host)
-        #print(application.user)
-        #print(application.password)
-        #TEST
 
         # TO-DO: list instance informations as well
 
