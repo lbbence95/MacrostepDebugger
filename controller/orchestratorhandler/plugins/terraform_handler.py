@@ -3,7 +3,8 @@
 import data.repository as mstep_repo
 import json, os, re, subprocess, sys, time
 import logging
-from subprocess import CREATE_NO_WINDOW, PIPE, STDOUT
+#from subprocess import CREATE_NO_WINDOW, PIPE, STDOUT
+import subprocess
 
 #Logger setup
 logger = logging.getLogger('terraform_handler')
@@ -20,7 +21,7 @@ class TerraformHandler():
     
     def __init__(self, orch_type):
         self.orch_type = orch_type
-        self.app_regex = re.compile(".*\${.*private_ip\}.*")
+        self.app_regex = re.compile(".*\${.*_private_ip\}.*")
 
     def Check_infrastructure_descriptor(self, infra_folder):
         """
@@ -87,7 +88,7 @@ class TerraformHandler():
         # Linux
         # terraform_subproc = subprocess.Popen('terraform apply -auto-approve', shell=True, cwd=app.infra_file, stdout=subprocess.PIPE, stderr=STDOUT)
         # Win
-        terraform_subproc = subprocess.Popen('terraform apply -auto-approve', shell=False, cwd=app.infra_file, creationflags=CREATE_NO_WINDOW, stdout=subprocess.PIPE, stderr=STDOUT)
+        terraform_subproc = subprocess.Popen('terraform apply -auto-approve', shell=False, cwd=app.infra_file, creationflags=subprocess.CREATE_NO_WINDOW, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
         while True:
             line = terraform_subproc.stdout.readline()
@@ -113,7 +114,7 @@ class TerraformHandler():
         # Linux
         # terraform_subproc = subprocess.run('terraform destroy -auto-approve', shell=True, cwd=app.infra_file, stdout=subprocess.PIPE, stderr=STDOUT)
         # Win
-        terraform_subproc = subprocess.run('terraform destroy -auto-approve', shell=False, cwd=app.infra_file, creationflags=CREATE_NO_WINDOW, stdout=subprocess.PIPE, stderr=STDOUT)
+        terraform_subproc = subprocess.run('terraform destroy -auto-approve', shell=False, cwd=app.infra_file, creationflags=subprocess.CREATE_NO_WINDOW, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
         #TO-DO: Check if any error has occured
         logger.info('Instance successfully destroyed!')
@@ -132,16 +133,19 @@ class TerraformHandler():
 
         logger.info('Waiting for Terraform to start processes (VMs)...')
 
+        time.sleep(10)
+
         process_ids = []
         resources_list = []
 
         while (True):
+
             try:
                 tf_state_file = json.loads(open(os.path.join(app.infra_file, 'terraform.tfstate')).read())
                 resources_list = tf_state_file['resources']
                 break
             except PermissionError:
-                time.sleep(5)
+                time.sleep(15)  
         
         for act_resource in resources_list:
             try:
@@ -151,12 +155,13 @@ class TerraformHandler():
             except KeyError:
                 pass
 
+        #print('TEST: process_ids to wait for: {}'.format(process_ids))
+
         # Check every process is ready
         logger.info('Checking for root state...')
         
         infra_up = False
         db_processes = []
-
 
         while (infra_up == False):
 
@@ -173,7 +178,7 @@ class TerraformHandler():
             
             time.sleep(5)
         
-        #TO-DO: more info on started processes, e.g.: IDs
+        #TO-DO: more info on started processes
             
         logger.info('Instance reached root state!')
         logger.info('Running processes:\r\n')
