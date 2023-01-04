@@ -62,5 +62,7 @@ if __name__ == "__main__":
 
     # -n: Test Neo4j database connection
     elif (args.neo == True):
-        logger.info('Testing Neo4j connection...')
-        mstep_exectree.Read_connection_details()
+        print('Functionality disabled...')
+
+        #logger.info('Testing Neo4j connection...')
+        #mstep_exectree.Read_connection_details()
