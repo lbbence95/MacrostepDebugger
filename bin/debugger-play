@@ -43,6 +43,8 @@ arg_group.add_argument('-i', '--infrastructure', type=str, metavar='INSTANCE_ID'
 #Option: replay
 arg_group.add_argument('-r', '--replay', type=str, metavar='COLLECTIVE_BREAKPOINT_ID', help='replay a given application to the given collective breakpoint')
 
+#Option: parallel debugging
+arg_group.add_argument('-p', '--parallel', action='store_true', help='parallelized automatic debugging')
 
 #Argparse
 args = parser.parse_args()
@@ -61,7 +63,10 @@ if __name__ == "__main__":
         
         # Automatic debugging
         elif (args.auto == True):
-            mstep_controller.Start_automatic_debug_session(args.application[0])
+            if (args.parallel == False):
+                mstep_controller.Start_automatic_debug_session(args.application[0])
+            else:
+                mstep_controller.Start_automatic_debug_session(args.application[0], parallelized=True)
 
         # Replay
         elif (args.replay != None):
