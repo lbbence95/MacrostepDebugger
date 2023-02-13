@@ -87,7 +87,7 @@ def Create_root(app, infra_id, process_states):
     # Create root node
     transact = neo_graph.begin()
 
-    root_node = Node("Collective_BP", app_name=app.app_name, instance_ids=json.dumps([]), node_type="root", prev_coll_bp="", exhausted="No", coll_bp_id=root_id, process_states=json.dumps(process_states), collected_data=json.dumps([]))
+    root_node = Node("Collective_BP", app_name=app.app_name, instance_ids=json.dumps([]), node_type="root", prev_coll_bp="", exhausted="No", coll_bp_id=root_id, process_states=json.dumps(process_states), collected_data=json.dumps([]), evaluation=json.dumps([]))
 
     transact.create(root_node)
 
@@ -122,13 +122,13 @@ def Create_collective_breakpoint(app, app_instance, process_states, satisfies_sp
 
     if (not_finished == 0):
         # This is a final state
-        new_node = Node("Collective_BP", app_name=app.app_name, instance_ids=json.dumps([]), node_type="final", prev_coll_bp=app_instance.curr_coll_bp, exhausted="Yes", coll_bp_id=coll_bp_id, process_states=json.dumps(process_states), collected_data=json.dumps([]))
+        new_node = Node("Collective_BP", app_name=app.app_name, instance_ids=json.dumps([]), node_type="final", prev_coll_bp=app_instance.curr_coll_bp, exhausted="Yes", coll_bp_id=coll_bp_id, process_states=json.dumps(process_states), collected_data=json.dumps([]), evaluation=json.dumps([]))
     elif (not_finished >= 2):
         # This is an alternative state
-        new_node = Node("Collective_BP", app_name=app.app_name, instance_ids=json.dumps([]), node_type="alternative", prev_coll_bp=app_instance.curr_coll_bp, exhausted="No", coll_bp_id=coll_bp_id, process_states=json.dumps(process_states), collected_data=json.dumps([]))
+        new_node = Node("Collective_BP", app_name=app.app_name, instance_ids=json.dumps([]), node_type="alternative", prev_coll_bp=app_instance.curr_coll_bp, exhausted="No", coll_bp_id=coll_bp_id, process_states=json.dumps(process_states), collected_data=json.dumps([]), evaluation=json.dumps([]))
     elif (not_finished == 1):
         # This is a deterministic state
-        new_node = Node("Collective_BP", app_name=app.app_name, instance_ids=json.dumps([]), node_type="deterministic", prev_coll_bp=app_instance.curr_coll_bp, exhausted="No", coll_bp_id=coll_bp_id, process_states=json.dumps(process_states), collected_data=json.dumps([]))
+        new_node = Node("Collective_BP", app_name=app.app_name, instance_ids=json.dumps([]), node_type="deterministic", prev_coll_bp=app_instance.curr_coll_bp, exhausted="No", coll_bp_id=coll_bp_id, process_states=json.dumps(process_states), collected_data=json.dumps([]), evaluation=json.dumps([]))
 
     transact.create(new_node)
 
@@ -315,6 +315,7 @@ def Update_node_app_instance_ids(app, coll_bp_id, app_instance_id):
     global_state = {}
     global_overall_state = True
 
+    print('')
     try:
         specification = yaml.safe_load(open(app.app_desc_file, 'r'))['specification']
 
@@ -339,9 +340,9 @@ def Update_node_app_instance_ids(app, coll_bp_id, app_instance_id):
                         received_data = new_data[app_instance_id][act_proc_name][i + 1]['userData'][variable_name]
                         global_state[act_proc_name][i + 1][variable_name] = Evaluate_existing_process_variable(received_data, 'equals', act_variable['variable']['expected']['exactly'])
 
-                        print(f"{act_proc_name}[{i + 1}]: {variable_name} is to be {act_variable['variable']['expected']['exactly']}, got: {received_data}")
+                        print(f"\tCould evaluate '{variable_name}' for process {act_proc_name}[{i + 1}]: expected '{act_variable['variable']['expected']['exactly']}', got: '{received_data}'")
                     else:
-                        print(f'Could not evalute {variable_name} for process {act_proc_name}[{i + 1}]')
+                        print(f'\tCould not evalute {variable_name} for process {act_proc_name}[{i + 1}]')
 
                         global_state[act_proc_name][i + 1][variable_name] = False
 
@@ -349,13 +350,18 @@ def Update_node_app_instance_ids(app, coll_bp_id, app_instance_id):
                     global_state['GLOBAL'] = global_overall_state
 
                     i += 1
-
     except Exception:
         tb = traceback.format_exc()
         print('An error has occured...\r\n{}\r\n'.format(tb))
         pass
-    
-    print(global_state)
+    print('')
+
+    new_evaluation = {}
+    new_evaluation[app_instance_id] = global_state
+    evaluated = list(json.loads(coll_bp_to_update['evaluation']))
+    evaluated.append(new_evaluation)
+
+    coll_bp_to_update['evaluation'] = json.dumps(evaluated)
 
     neo_graph.push(coll_bp_to_update)
 
@@ -368,8 +374,6 @@ def Is_app_root_exhausted(app):
     Returns:
         bool: True if root is exhausted, False if not.
     """
-
-    #app = mstep_repo.Read_given_application(app_name)
 
     conn_details = Read_connection_details(app, silent=True)
     neo_graph = conn_details[1]
