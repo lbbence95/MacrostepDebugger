@@ -42,7 +42,7 @@ def Process_app_descriptor(app_desc_file):
 
         try:
             app_data = yaml.safe_load(open(app_desc))
-            
+
             # Check needed keys in app descriptor
             if all (k in app_data for k in ("application_name", "orchestrator", "exec-tree")):
                 
@@ -117,15 +117,6 @@ def Process_app_descriptor(app_desc_file):
                     for act_variable in variables_list:
                         if ('name' not in act_variable['variable'] or 'expected' not in act_variable['variable']):
                             raise KeyError
-                        
-                        #print("{}: {} is to be {}".format(act_proc_name, act_variable['variable']['name'], act_variable['variable']['expected']['exactly']))
-
-                    #     #             act_proc_counter = 1
-
-                    #     #             if act_proc[act_proc_counter]["userData"][]
-
-                    #     #         num_of_act_proc_name = len(new_data[app_instance_id][act_specification_proc_name].items())
-
             else:
                 raise KeyError               
 
@@ -275,11 +266,12 @@ def Stop_debugging_infra(app_name, infra_id):
         logger.info('Application "{}" or infrastructure "{}" does not exist!'.format(app_name, infra_id))
 
 
-def Start_automatic_debug_session(app_name):
+def Start_automatic_debug_session(app_name, parallelized=False):
     """Start an automatic debugging session for the given application.
 
     Args:
         app_name (str): An application name.
+        parallelized (bool, optional): Parallelized execution. Defaults to False.
     """
 
     # Check if app exists
@@ -290,9 +282,10 @@ def Start_automatic_debug_session(app_name):
         # Application exists
         app = mstep_repo.Read_given_application(app_name)
         replay_pointer = ""
-        # In case there were previous failed runs which stopped mid-way in debugging, the replay pointer is set to the last reached collective breakpoints ID.
+        # In case there were previous failed runs which stopped mid-way in debugging, the replay pointer is set to the last reached collective breakpoint's ID.
         # This ID is available at the application as current collective breakpoint.
-        
+
+        #TO-DO: continue parallel debugging
         if (app.curr_coll_bp != ""):
             replay_pointer = app.curr_coll_bp
 
@@ -303,6 +296,11 @@ def Start_automatic_debug_session(app_name):
             app = mstep_repo.Read_given_application(app_name)
         
             instance_id = ""
+
+            if (parallelized == True):
+                #Parallel debugging
+                print('Parallel debugging...')
+                sys.exit(0)
 
             # Check if replay_pointer is empty or not. If it is, then start instance and exhaust an execution path
             # If pointer is not empty, replay to that state.
@@ -391,6 +389,10 @@ def Start_automatic_debug_session(app_name):
         logger.info('Application "{}" does not exist.'.format(app_name))
 
 
+def Parallel_automatic_debugging():
+    pass
+
+
 def Start_freerun_session(app_name):
     """Starts a freerun session for the given application
 
@@ -406,7 +408,7 @@ def Start_freerun_session(app_name):
         # Start applciation/infrastructure instance
         instance_id = Start_infra_instance(app, freerun=1)
 
-        logger.info('Freerun session started for application "{}".'.format(app_name))
+        logger.info('Freerun session started for application "{}".\r\n'.format(app_name))
 
         bps_logged = []
 
@@ -436,6 +438,7 @@ def Start_freerun_session(app_name):
             bps_logged.append(tuple((act_bp.node_id, act_bp.bp_num)))
             print('\t{}: {} ({}) reached bp. #{}'.format(act_bp.bp_reg, node.node_name, act_bp.node_id, act_bp.bp_num))
         
+        print()
         logger.info('Instance {} finished deployment!'.format(instance_id))
         Stop_debugging_infra(app_name, instance_id)
 
@@ -790,7 +793,7 @@ def Get_process_to_step_auto_debug(app, app_instance, selection_policy="abc"):
                 if ((j < len(processes)) and (proc_name != processes[j].node_name)):
                     proc_name = processes[j].node_name
                     i = 0
- 
+
 
 def Get_proc_id_to_step(app_instance_id, curr_process_states, next_process_states):
     """Gets the ID of the process that needs to be stepped.
