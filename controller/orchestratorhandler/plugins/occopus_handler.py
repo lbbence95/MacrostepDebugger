@@ -159,7 +159,6 @@ class OccopusHandler():
                         processes[vm_id] = mstep_repo.Node_exists(instance_id, vm_id)
                         logger.info('Waiting for VM: {} ("{}"), ready: {}'.format(vm_id, act_vm_name, 'Yes' if processes[vm_id] == True else 'No'))
 
-                
                 infra_up = True
                 
                 # Check if every VM is ready
@@ -184,6 +183,15 @@ class OccopusHandler():
                 #Instance up and running
                 print('')
                 logger.info('All processes in "{} / {}" are running.'.format(app.app_name, instance_id))
+
+                nodes = sorted(mstep_repo.Read_nodes_from_infra(instance_id), key=lambda x: (x.node_name, x.node_id))
+
+                print('')
+                for act_node in nodes:
+                    print('\t"{}" ("{}"), at bp.: #{}, finished: {}, permitted: {} ({})'.format(act_node.node_name, act_node.node_id, act_node.curr_bp,
+                    'Yes' if act_node.finished == 1 else 'No', 'Yes' if act_node.move_next == 1 else 'No', act_node.refreshed))
+                    
+                print('')    
             else:
                 #Instance not fully deployed, wait
                 time.sleep(3)
