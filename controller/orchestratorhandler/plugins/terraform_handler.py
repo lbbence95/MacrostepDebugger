@@ -172,6 +172,7 @@ class TerraformHandler():
 
                 for act_proc in process_ids:
                     if act_proc not in db_process_ids:
+                        #TO-DO: wait for all processes
                         break
                 
                     infra_up = True
