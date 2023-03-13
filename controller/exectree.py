@@ -279,14 +279,14 @@ def Update_closest_alternative_coll_bp(app, curr_bp_id, final_process_states):
 
     logger.info('No (further) alternative parent node updated.')
 
-
-def Update_node_app_instance_ids(app, coll_bp_id, app_instance_id):
-    """Adds the given application instance ID to the given collective breakpoint's instance IDs list. Also appends new collected data to the node, using the given instance ID as the (sub)key.
+def Update_node_app_specification_evaluation(app, new_data, app_instance_id, coll_bp_id):
+    """Adds the evaluated specification to the node.
 
     Args:
         app (Application): An Application.
-        coll_bp_id (string): A collective breakpoint ID identifing a collective breakpoint in the application's exectuion tree.
+        new_data (dict): A dictionary of the new instance's collected data at the node.
         app_instance_id (string): An application instance ID to store.
+        coll_bp_id (string): A collective breakpoint ID identifing a collective breakpoint in the application's exectuion tree.
     """
 
     conn_details = Read_connection_details(app, silent=True)
@@ -295,22 +295,6 @@ def Update_node_app_instance_ids(app, coll_bp_id, app_instance_id):
 
     coll_bp_to_update = node_matcher.match('Collective_BP').where("_.app_name =~ '{}' AND _.coll_bp_id =~ '{}'".format(app.app_name, coll_bp_id)).first()
 
-    app_instance_ids = list(json.loads(coll_bp_to_update['instance_ids']))
-    app_instance_ids.append(app_instance_id)
-
-    coll_bp_to_update['instance_ids'] = json.dumps(app_instance_ids)
-    neo_graph.push(coll_bp_to_update)
-
-    # Store data at coll. bp.
-    new_data = {}
-    new_data[app_instance_id] = mstep_repo.Get_app_instance_curr_coll_bp_data(app, app_instance_id)
-
-    collected_data = list(json.loads(coll_bp_to_update['collected_data']))
-    collected_data.append(new_data)
-
-    coll_bp_to_update['collected_data'] = json.dumps(collected_data)
-
-    # Check if state satisfies specification
     specification = ""
     global_state = {}
     global_overall_state = True
@@ -365,6 +349,41 @@ def Update_node_app_instance_ids(app, coll_bp_id, app_instance_id):
 
     neo_graph.push(coll_bp_to_update)
 
+
+def Update_node(app, coll_bp_id, app_instance_id):
+    """Adds the given application instance ID to the given collective breakpoint's instance IDs list. Also appends new collected data to the node, using the given instance ID.
+
+    Args:
+        app (Application): An Application.
+        coll_bp_id (string): A collective breakpoint ID identifing a collective breakpoint in the application's exectuion tree.
+        app_instance_id (string): An application instance ID to store.
+    """
+
+    conn_details = Read_connection_details(app, silent=True)
+    neo_graph = conn_details[1]
+    node_matcher = NodeMatcher(neo_graph)
+
+    coll_bp_to_update = node_matcher.match('Collective_BP').where("_.app_name =~ '{}' AND _.coll_bp_id =~ '{}'".format(app.app_name, coll_bp_id)).first()
+
+    app_instance_ids = list(json.loads(coll_bp_to_update['instance_ids']))
+    app_instance_ids.append(app_instance_id)
+
+    coll_bp_to_update['instance_ids'] = json.dumps(app_instance_ids)
+    neo_graph.push(coll_bp_to_update)
+
+    # Store data at coll. bp.
+    new_data = {}
+    new_data[app_instance_id] = mstep_repo.Get_app_instance_curr_coll_bp_data(app, app_instance_id)
+
+    collected_data = list(json.loads(coll_bp_to_update['collected_data']))
+    collected_data.append(new_data)
+
+    coll_bp_to_update['collected_data'] = json.dumps(collected_data)
+
+    neo_graph.push(coll_bp_to_update)
+
+    # Check if state satisfies specification
+    Update_node_app_specification_evaluation(app, new_data, app_instance_id, coll_bp_id)
 
 def Is_app_root_exhausted(app):
     """Decides if the given application's root collective breakpoint is exhausted or not.
