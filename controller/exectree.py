@@ -322,9 +322,12 @@ def Update_node_app_specification_evaluation(app, new_data, app_instance_id, col
                 while (i < num_of_act_proc_name):
                     if ( variable_name in new_data[app_instance_id][act_proc_name][i + 1]['userData'].keys() ):
                         received_data = new_data[app_instance_id][act_proc_name][i + 1]['userData'][variable_name]
-                        global_state[act_proc_name][i + 1][variable_name] = Evaluate_existing_process_variable(received_data, 'equals', act_variable['variable']['expected']['exactly'])
 
-                        print(f"\tCould evaluate '{variable_name}' for process {act_proc_name}[{i + 1}]: expected '{act_variable['variable']['expected']['exactly']}', got: '{received_data}'")
+                        variable_operator = list(act_variable['variable']['expected'].keys())
+
+                        global_state[act_proc_name][i + 1][variable_name] = Evaluate_existing_process_variable(received_data, variable_operator[0], act_variable['variable']['expected'][variable_operator[0]])
+
+                        print(f"\tCould evaluate '{variable_name}' for process {act_proc_name}[{i + 1}], expected '{act_variable['variable']['expected']['exactly']}', got: '{received_data}'")
                     else:
                         print(f'\tCould not evalute {variable_name} for process {act_proc_name}[{i + 1}]')
 
@@ -584,7 +587,7 @@ def Get_next_coll_bp_id_to_target(app, start_coll_bp_id, target_coll_bp_id):
             return ""
 
 def Evaluate_existing_process_variable(received_data: str, operator: str, expected: str) -> bool:
-    """Evaluates if the input received variable value equals to the expected value.
+    """Evaluates if the input received variable value satisfies the condition against the expected value.
 
     Args:
         received_data (str): Received variable data value.
@@ -597,7 +600,7 @@ def Evaluate_existing_process_variable(received_data: str, operator: str, expect
 
     ret_value = False
 
-    if (operator == 'equals'):
+    if (operator == 'exactly'):
         ret_value = eval('str(received_data) == str(expected)')
     else:
         ret_value = False
