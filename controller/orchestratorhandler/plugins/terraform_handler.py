@@ -39,6 +39,15 @@ class TerraformHandler():
             # TO-DO: Actual validation of the infrastructure files.
             # Terraform validate or Terraform plan
             # Check output for errors
+
+            #TO-DO: platform dependent code / independent instruction
+            # Linux
+            # terraform_subproc = subprocess.Popen('terraform init', shell=True, cwd=infra_folder, stdout=subprocess.PIPE, stderr=STDOUT)
+            # Win
+            #terraform_subproc = subprocess.Popen('terraform init', shell=False, cwd=infra_folder, creationflags=subprocess.CREATE_NO_WINDOW, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
+            terraform_subproc = subprocess.call('terraform init', shell=False, cwd=infra_folder, creationflags=subprocess.CREATE_NO_WINDOW,  stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
             return True
         else:
             return False
