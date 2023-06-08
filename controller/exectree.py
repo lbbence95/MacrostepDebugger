@@ -296,23 +296,37 @@ def Update_node_app_specification_evaluation(app, new_data, app_instance_id, col
     coll_bp_to_update = node_matcher.match('Collective_BP').where("_.app_name =~ '{}' AND _.coll_bp_id =~ '{}'".format(app.app_name, coll_bp_id)).first()
 
     specification = ""
-    global_state = {}
-    global_overall_state = True
+
+    operators_shorthand = {'equals': '=', 'less_than_eq':'<=', 'less_than':'<', 'greater_than_eq':'>=', 'greater_than':'>', 'exactly':'exactly', 'contains':'contains'}
 
     print('')
     try:
         specification = yaml.safe_load(open(app.app_desc_file, 'r'))['specification']
 
+        processes_data = {}
+        processes_evalued = {}
+        for act_proc_name in new_data[app_instance_id].keys():
+            processes_data[act_proc_name] = {}
+            processes_evalued[act_proc_name] ={}
+
+            for act_proc_num in new_data[app_instance_id][act_proc_name].keys():
+                processes_data[act_proc_name][act_proc_num] = {}
+                processes_evalued[act_proc_name][act_proc_num] = {}
+
+                for act_proc_var_group in new_data[app_instance_id][act_proc_name][act_proc_num].keys():
+                    for act_proc_var, act_proc_var_value in new_data[app_instance_id][act_proc_name][act_proc_num][act_proc_var_group].items():
+                        processes_data[act_proc_name][act_proc_num][act_proc_var] = act_proc_var_value
+                        processes_evalued[act_proc_name][act_proc_num][act_proc_var] = None
+
+
         for act_proc_name, variables_list in specification.items():
-
-            global_state[act_proc_name] = {}
-
-            num_of_act_proc_name = len( new_data[app_instance_id][act_proc_name].items() )
-
-            i = 0
-            while (i < num_of_act_proc_name):
-                global_state[act_proc_name][i + 1] = {}
-                i += 1
+            
+            num_of_act_proc_name = 0
+            try:
+                num_of_act_proc_name = len( processes_data[act_proc_name].items() )
+            except KeyError:
+                print(f'\tCould not evalute {variable_name} for processes {act_proc_name}.')
+                continue
 
             for act_variable in variables_list:
                 
@@ -320,23 +334,20 @@ def Update_node_app_specification_evaluation(app, new_data, app_instance_id, col
                 variable_name = act_variable["variable"]["name"]
 
                 while (i < num_of_act_proc_name):
-                    if ( variable_name in new_data[app_instance_id][act_proc_name][i + 1]['userData'].keys() ):
-                        received_data = new_data[app_instance_id][act_proc_name][i + 1]['userData'][variable_name]
+                    if ( act_proc_name in processes_data.keys() and variable_name in processes_data[act_proc_name][i + 1].keys() ):
+                        received_data = processes_data[act_proc_name][i + 1][variable_name]
 
                         variable_operator = list(act_variable['variable']['expected'].keys())
 
-                        global_state[act_proc_name][i + 1][variable_name] = Evaluate_existing_process_variable(received_data, variable_operator[0], act_variable['variable']['expected'][variable_operator[0]])
+                        processes_evalued[act_proc_name][i + 1][variable_name] = Evaluate_existing_process_variable(received_data, variable_operator[0], act_variable['variable']['expected'][variable_operator[0]])
 
-                        print(f"\tCould evaluate '{variable_name}' for process {act_proc_name}[{i + 1}], expected '{act_variable['variable']['expected']['exactly']}', got: '{received_data}'")
+                        print(f"\tCould evaluate '{variable_name}' for process {act_proc_name}[{i + 1}], expected '{received_data} {operators_shorthand[variable_operator[0]]} {act_variable['variable']['expected'][variable_operator[0]]}', got: '{received_data}' ({processes_evalued[act_proc_name][i + 1][variable_name]})")
                     else:
                         print(f'\tCould not evalute {variable_name} for process {act_proc_name}[{i + 1}]')
 
-                        global_state[act_proc_name][i + 1][variable_name] = False
-
-                    global_overall_state = global_overall_state and global_state[act_proc_name][i + 1][variable_name]
-                    global_state['GLOBAL'] = global_overall_state
-
                     i += 1
+        
+        processes_evalued['_GLOBAL'] = None
     except Exception:
         tb = traceback.format_exc()
         print('An error has occured...\r\n{}\r\n'.format(tb))
@@ -344,7 +355,7 @@ def Update_node_app_specification_evaluation(app, new_data, app_instance_id, col
     print('')
 
     new_evaluation = {}
-    new_evaluation[app_instance_id] = global_state
+    new_evaluation[app_instance_id] = processes_evalued
     evaluated = list(json.loads(coll_bp_to_update['evaluation']))
     evaluated.append(new_evaluation)
 
@@ -600,8 +611,20 @@ def Evaluate_existing_process_variable(received_data: str, operator: str, expect
 
     ret_value = False
 
-    if (operator == 'exactly'):
-        ret_value = eval('str(received_data) == str(expected)')
+    if (operator == 'equals' and received_data != ""):
+        ret_value = eval('float(received_data) == float(expected)')
+    elif (operator == 'less_than_eq' and received_data != ""):
+        ret_value = eval('float(received_data) <= float(expected)')
+    elif (operator == 'less_than' and received_data != ""):
+        ret_value = eval('float(received_data) < float(expected)')
+    elif (operator == 'greater_than_eq' and received_data != ""):
+        ret_value = eval('float(received_data) >= float(expected)')
+    elif (operator == 'greater_than' and received_data != ""):
+        ret_value = eval('float(received_data) > float(expected)')
+    elif (operator == 'exactly' and received_data != ""):
+        ret_value = (str(received_data) == str(expected))
+    elif (operator == 'contains' and received_data != ""):
+        ret_value = (str(expected) in received_data)
     else:
         ret_value = False
         
