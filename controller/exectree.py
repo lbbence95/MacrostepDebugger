@@ -2,7 +2,7 @@
 
 import data.repository as mstep_repo
 from py2neo import Graph, Node, Relationship, NodeMatcher
-import uuid, json, logging, os.path, yaml
+import uuid, json, logging, os.path, re, yaml
 
 import traceback
 
@@ -304,19 +304,19 @@ def Update_node_app_specification_evaluation(app, new_data, app_instance_id, col
         specification = yaml.safe_load(open(app.app_desc_file, 'r'))['specification']
 
         processes_data = {}
-        processes_evalued = {}
+        processes_evaluated = {}
         for act_proc_name in new_data[app_instance_id].keys():
             processes_data[act_proc_name] = {}
-            processes_evalued[act_proc_name] ={}
+            processes_evaluated[act_proc_name] ={}
 
             for act_proc_num in new_data[app_instance_id][act_proc_name].keys():
                 processes_data[act_proc_name][act_proc_num] = {}
-                processes_evalued[act_proc_name][act_proc_num] = {}
+                processes_evaluated[act_proc_name][act_proc_num] = {}
 
                 for act_proc_var_group in new_data[app_instance_id][act_proc_name][act_proc_num].keys():
                     for act_proc_var, act_proc_var_value in new_data[app_instance_id][act_proc_name][act_proc_num][act_proc_var_group].items():
                         processes_data[act_proc_name][act_proc_num][act_proc_var] = act_proc_var_value
-                        processes_evalued[act_proc_name][act_proc_num][act_proc_var] = None
+                        processes_evaluated[act_proc_name][act_proc_num][act_proc_var] = None
 
 
         for act_proc_name, variables_list in specification.items():
@@ -339,23 +339,46 @@ def Update_node_app_specification_evaluation(app, new_data, app_instance_id, col
 
                         variable_operator = list(act_variable['variable']['expected'].keys())
 
-                        processes_evalued[act_proc_name][i + 1][variable_name] = Evaluate_existing_process_variable(received_data, variable_operator[0], act_variable['variable']['expected'][variable_operator[0]])
+                        processes_evaluated[act_proc_name][i + 1][variable_name] = Evaluate_existing_process_variable(received_data, variable_operator[0], act_variable['variable']['expected'][variable_operator[0]])
 
-                        print(f"\tCould evaluate '{variable_name}' for process {act_proc_name}[{i + 1}], expected '{received_data} {operators_shorthand[variable_operator[0]]} {act_variable['variable']['expected'][variable_operator[0]]}', got: '{received_data}' ({processes_evalued[act_proc_name][i + 1][variable_name]})")
+                        print(f"\tCould evaluate '{variable_name}' for process {act_proc_name}[{i + 1}], expected '{received_data} {operators_shorthand[variable_operator[0]]} {act_variable['variable']['expected'][variable_operator[0]]}', got: '{received_data}' ({processes_evaluated[act_proc_name][i + 1][variable_name]})")
                     else:
                         print(f'\tCould not evalute {variable_name} for process {act_proc_name}[{i + 1}]')
 
                     i += 1
-        
-        processes_evalued['_GLOBAL'] = None
+             
     except Exception:
         tb = traceback.format_exc()
         print('An error has occured...\r\n{}\r\n'.format(tb))
         pass
     print('')
 
+    processes_evaluated['_GLOBAL'] = None
+    global_predicate = yaml.safe_load(open(app.app_desc_file, 'r'))['specification_global']
+    global_predicate_evaluated = None
+    if ( Check_process_and_variable_names(global_predicate, processes_evaluated) == True ):
+        new_string = re.split(r'( and | or |\(|\))', global_predicate)
+        new_string_2 = []
+        for act_split in new_string:
+            to_append = act_split
+            if ' is ' in act_split:
+                variable_string = re.split(r"( is )", act_split)
+                variable_value = Get_variable_value(variable_string[0], processes_evaluated)
+                variable_string[0] = "".join([str(variable_value), ' '])
+                variable_string[1] = ' == '
+                to_append = "".join(act_item for act_item in variable_string)
+    
+            new_string_2.append(to_append)
+        
+        global_predicate_evaluated = eval("".join(act_item for act_item in new_string_2))
+
+        print(f'\tTo evalueate: \t{global_predicate}')
+        print(f'\tSubstituted: \t{"".join(act_item for act_item in new_string_2)}')
+        print(f'\tEvaluation: \t{global_predicate_evaluated}\r\n')
+
+    processes_evaluated['_GLOBAL'] = global_predicate_evaluated
     new_evaluation = {}
-    new_evaluation[app_instance_id] = processes_evalued
+    new_evaluation[app_instance_id] = processes_evaluated
     evaluated = list(json.loads(coll_bp_to_update['evaluation']))
     evaluated.append(new_evaluation)
 
@@ -363,6 +386,54 @@ def Update_node_app_specification_evaluation(app, new_data, app_instance_id, col
 
     neo_graph.push(coll_bp_to_update)
 
+def Get_variable_value(string, processes):
+    #TO-DO: documentation
+
+    splitted_string = re.split(r'(\.)', string)
+    next_splitted_string = re.split(r'(\[.*\])', splitted_string[0])
+    
+    proc_name=next_splitted_string[0].strip()
+    proc_num=int(next_splitted_string[1].replace('[','').replace(']',''))
+    proc_num_var=splitted_string[2].strip()
+
+    return processes[proc_name][proc_num][proc_num_var]
+
+
+def Check_process_and_variable_names(string, processes):
+    #TO-DO: documentation
+
+    new_string = re.split(r'( and | or |\(|\))', string)
+
+    for act_split in new_string:
+        if ' is ' in act_split:
+            variable_string = re.split(r"( is )", act_split)    
+            splitted_string = re.split(r'(\.)', variable_string[0])
+            next_splitted_string = re.split(r'(\[.*\])', splitted_string[0])
+
+            proc_name=next_splitted_string[0].strip()
+            proc_num=-1
+            proc_num_var=splitted_string[2].strip()
+            
+            if proc_name not in processes.keys():
+                print('Non-existing process name detected. Please check expression!')
+                return False
+
+            try:
+                proc_num=int(next_splitted_string[1].replace('[','').replace(']',''))
+            except ValueError:
+                print('Invalid process number detected. Please check expression!')
+                return False
+
+            if proc_num not in processes[proc_name].keys():
+                print('Non-existing process number detected. Please check expression!')
+                return False
+            
+            if (proc_num_var not in processes[proc_name][proc_num].keys()):
+                print('Non-existing process variable detected. Please check expression!')
+                return False
+
+    #print('All process names, numbers and variables were found!')
+    return True
 
 def Update_node(app, coll_bp_id, app_instance_id):
     """Adds the given application instance ID to the given collective breakpoint's instance IDs list. Also appends new collected data to the node, using the given instance ID.
