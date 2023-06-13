@@ -297,7 +297,7 @@ def Update_node_app_specification_evaluation(app, new_data, app_instance_id, col
 
     specification = ""
 
-    operators_shorthand = {'equals': '=', 'less_than_eq':'<=', 'less_than':'<', 'greater_than_eq':'>=', 'greater_than':'>', 'exactly':'exactly', 'contains':'contains'}
+    operators_shorthand = {'equals': '=', 'not_equals':'<>', 'less_than_eq':'<=', 'less_than':'<', 'greater_than_eq':'>=', 'greater_than':'>', 'between': '><', 'exactly':'exactly', 'contains':'contains'}
 
     print('')
     try:
@@ -334,14 +334,16 @@ def Update_node_app_specification_evaluation(app, new_data, app_instance_id, col
                 variable_name = act_variable["variable"]["name"]
 
                 while (i < num_of_act_proc_name):
-                    if ( act_proc_name in processes_data.keys() and variable_name in processes_data[act_proc_name][i + 1].keys() ):
+                    variable_operator = list(act_variable['variable']['expected'].keys())
+
+                    if ( act_proc_name in processes_data.keys() and variable_name in processes_data[act_proc_name][i + 1].keys() and variable_operator[0] in operators_shorthand.keys() ):
                         received_data = processes_data[act_proc_name][i + 1][variable_name]
-
-                        variable_operator = list(act_variable['variable']['expected'].keys())
-
                         processes_evaluated[act_proc_name][i + 1][variable_name] = Evaluate_existing_process_variable(received_data, variable_operator[0], act_variable['variable']['expected'][variable_operator[0]])
 
-                        print(f"\tCould evaluate '{variable_name}' for process {act_proc_name}[{i + 1}], expected '{received_data} {operators_shorthand[variable_operator[0]]} {act_variable['variable']['expected'][variable_operator[0]]}', got: '{received_data}' ({processes_evaluated[act_proc_name][i + 1][variable_name]})")
+                        if ( variable_operator[0] == "between" ):
+                            print(f"\tCould evaluate '{variable_name}' for process {act_proc_name}[{i + 1}], expected '{received_data} {operators_shorthand[variable_operator[0]]} {act_variable['variable']['expected'][variable_operator[0]][:2]}', got: '{received_data}' ({processes_evaluated[act_proc_name][i + 1][variable_name]})")
+                        else:
+                            print(f"\tCould evaluate '{variable_name}' for process {act_proc_name}[{i + 1}], expected '{received_data} {operators_shorthand[variable_operator[0]]} {act_variable['variable']['expected'][variable_operator[0]]}', got: '{received_data}' ({processes_evaluated[act_proc_name][i + 1][variable_name]})")
                     else:
                         print(f'\tCould not evalute {variable_name} for process {act_proc_name}[{i + 1}]')
 
@@ -684,6 +686,11 @@ def Evaluate_existing_process_variable(received_data: str, operator: str, expect
 
     if (operator == 'equals' and received_data != ""):
         ret_value = eval('float(received_data) == float(expected)')
+    elif (operator == 'not_equals'):
+        if ( received_data != "" ):
+            ret_value = eval('float(received_data) != float(expected)')
+        else:
+            ret_value = True
     elif (operator == 'less_than_eq' and received_data != ""):
         ret_value = eval('float(received_data) <= float(expected)')
     elif (operator == 'less_than' and received_data != ""):
@@ -692,9 +699,12 @@ def Evaluate_existing_process_variable(received_data: str, operator: str, expect
         ret_value = eval('float(received_data) >= float(expected)')
     elif (operator == 'greater_than' and received_data != ""):
         ret_value = eval('float(received_data) > float(expected)')
-    elif (operator == 'exactly' and received_data != ""):
+    elif (operator == 'between' and received_data != ""):
+        expected = expected[:2]
+        ret_value = eval('float(min(expected)) < float(received_data) < float(max(expected))')
+    elif (operator == 'exactly'):
         ret_value = (str(received_data) == str(expected))
-    elif (operator == 'contains' and received_data != ""):
+    elif (operator == 'contains' and received_data != ""): 
         ret_value = (str(expected) in received_data)
     else:
         ret_value = False
