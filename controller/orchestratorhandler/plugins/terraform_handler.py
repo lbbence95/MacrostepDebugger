@@ -154,20 +154,32 @@ class TerraformHandler():
                 resources_list = tf_state_file['resources']
                 break
             except PermissionError:
-                time.sleep(15)  
-        
+                time.sleep(15)
+
+        test_infra_id = ""
+      
         for act_resource in resources_list:
+            if (act_resource['type'] == 'random_uuid' and act_resource['name'] == 'infra_id'):
+                test_infra_id = act_resource['instances'][0]['attributes']['result']
+
             try:
-                instances = act_resource['instances']
+                """ instances = act_resource['instances']
                 for act_instance in instances:
-                    process_ids.append(act_instance['attributes']['vars']['node_id'])
+                    process_ids.append(act_instance['attributes']['vars']['node_id']) """
+                
+                if (act_resource['type'] == 'random_uuid' and 'ids_' in act_resource['name']):
+                    instances = act_resource['instances']
+                    for act_instance in instances:
+                        process_ids.append(act_instance['attributes']['result'])
+
             except KeyError:
                 pass
 
         #print('TEST: process_ids to wait for: {}'.format(process_ids))
+        logger.info(f'Waiting for processes with ids: {process_ids}')
 
         # Check every process is ready
-        logger.info('Checking for root state...')
+        logger.info('Waiting for root state...')
         
         infra_up = False
         db_processes = []
@@ -175,7 +187,7 @@ class TerraformHandler():
         while (infra_up == False):
 
             db_processes = mstep_repo.Read_nodes_from_infra(instance_id)
-            
+
             if (db_processes != None):
                 db_process_ids = [proc.node_id for proc in db_processes]
 
@@ -193,6 +205,7 @@ class TerraformHandler():
         logger.info('Instance reached root state!')
         logger.info('Running processes:\r\n')
 
+        db_processes = mstep_repo.Read_nodes_from_infra(instance_id)
         for act_proc in db_processes:
             print('\t "{}" ("{}")'.format(act_proc.node_name, act_proc.node_id))
 
