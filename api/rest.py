@@ -5,6 +5,7 @@ from data import repository as mstep_repo
 from flask import Flask, request, jsonify
 from datetime import datetime
 import json, logging
+import time
 
 app = Flask(__name__)
 
@@ -104,9 +105,10 @@ def Refresh_breakpoint_data(infraID, nodeID):
     if (valid == True):
         # The request is valid and contains the necessary data.
 
-        mstep_repo.Update_proc_to_refreshed_in_infra(infraID, nodeID, 1)
+        #mstep_repo.Update_proc_to_refreshed_in_infra(infraID, nodeID, 1)
 
         mstep_repo.Update_process_breakpoint_info(infraID, nodeID, json.dumps(request_data.get_json()))
+        mstep_repo.Update_proc_to_refreshed_in_infra(infraID, nodeID, 1)
 
         print('\r\n*** Refreshed "{}"/"{}"\r\n'.format(infraID, nodeID))
     
@@ -153,6 +155,7 @@ def Get_step_permission(infraID, nodeID):
                 if (process.refreshed == 1):
                     return json.dumps({'success':True,'next':False}), 204, {'ContentType':'application/json'}
                 else:
+                    time.sleep(1)
                     return json.dumps({'success':True,'next':False}), 205, {'ContentType':'application/json'}
         
         else:
@@ -264,7 +267,6 @@ def Process_breakpoint_data(public_ip, json_data, curr_time):
             logger.info('New breakpoint added!')
 
             read_infra_name = mstep_repo.Read_given_infrastructure(infra_id).infra_name
-            print(read_infra_name)
 
             if (read_infra_name == ""):
                 mstep_repo.Update_infrastructure_name(infra_id, infra_name)
