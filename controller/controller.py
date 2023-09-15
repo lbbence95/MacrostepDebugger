@@ -44,20 +44,21 @@ def Process_app_descriptor(app_desc_file):
             app_data = yaml.safe_load(open(app_desc))
 
             # Check needed keys in app descriptor
-            if all (k in app_data for k in ("application_name", "orchestrator", "exec-tree")):
+            if all (k in app_data for k in ("scenario_name", "orchestrator", "exec-tree")):
                 
-                # Check for URL
-                if ("url" not in app_data["orchestrator"]):
-                    raise KeyError
-
                 app_desc_ok = True
-                orch = mstep_orch_factory.GetOrchHandler(app_data['orchestrator']['type'])
+                orchestrator_type = app_data['orchestrator']['type']
+                orch = mstep_orch_factory.GetOrchHandler(orchestrator_type)
+
+                # Check for URL
+                if ("url" not in app_data["orchestrator"][orchestrator_type]):
+                    raise KeyError
 
                 # Check infra descriptor
                 # Occopus
-                if (app_data['orchestrator']['type'] == 'occopus'):
+                if (orchestrator_type == 'occopus'):
 
-                    infra_desc_file = os.path.join('infra_defs', app_data['orchestrator']['occopus']['infra_file'])
+                    infra_desc_file = os.path.join('infra_defs', app_data['orchestrator']['occopus']['infra_files'])
                     #logger.info('Valid application descriptor file!')
 
                     # Check if infrastructure file is valid
@@ -67,13 +68,13 @@ def Process_app_descriptor(app_desc_file):
 
                     else:
                         raise TypeError
-
+                
                 # Terraform
-                elif (app_data['orchestrator']['type'] == 'terraform'):
+                elif (orchestrator_type == 'terraform'):
                     #TO-DO: check if local or remote
                     #TO-DO: if another local folder is selected, check its existence
 
-                    infra_folder = os.path.join('infra_defs', app_data['orchestrator']['terraform']['infra_folder'])
+                    infra_folder = os.path.join('infra_defs', app_data['orchestrator']['terraform']['infra_files'])
                     #logger.info('Valid application descriptor file!')
 
                     # Check if infrastructure files inf older are valid
@@ -84,7 +85,7 @@ def Process_app_descriptor(app_desc_file):
                         raise TypeError
 
                     infra_desc_file = infra_folder
-                    app_data['orchestrator']['terraform']['infra_file'] = infra_folder
+                    app_data['orchestrator']['terraform']['infra_files'] = infra_folder
                 
                 else:
                     print("Not implemented.")
@@ -103,22 +104,41 @@ def Process_app_descriptor(app_desc_file):
                     print("Not implemented.")
 
                 # Check exec-tree mode
-                exec_tree_mode = app_data['exec-tree']['mode']
+                """ exec_tree_mode = app_data['exec-tree']['mode']
 
                 if (exec_tree_mode == "tree"):
                     exec_tree_ok = True
                 else:
-                    exec_tree_ok = False
+                    exec_tree_ok = False """
 
                 # Check specification
                 specification = app_data['specification']
 
-                for act_proc_name, variables_list in specification.items():
-                    for act_variable in variables_list:
-                        if ('name' not in act_variable['variable'] or 'expected' not in act_variable['variable']):
-                            raise KeyError
+                for variable in specification['variables']:
+                    if all (l in specification['variables'][variable] for l in ('vm', 'name', 'group', 'expected')):
+                        if (specification['variables'][variable]['name'] == ""):
+                            raise ValueError
+                        
+                        if (specification['variables'][variable]['vm'] == ""):
+                            raise ValueError
+
+                        if (specification['variables'][variable]['expected'] == ""):
+                            raise ValueError
+                        
+                        if (specification['variables'][variable]['group'] not in ['all', 'any', 'none']):
+                            raise ValueError
+                    else:
+                        raise KeyError
+              
+                    if len(specification['statements']) > 0:
+                        for statement in specification['statements']:
+                            if statement == "":
+                                raise ValueError
+                    else:
+                        raise ValueError
+
             else:
-                raise KeyError               
+                raise KeyError
 
         except yaml.scanner.ScannerError:
             logger.info('Invalid YAML application descriptor file!')
@@ -126,7 +146,11 @@ def Process_app_descriptor(app_desc_file):
         except KeyError:
             app_desc_ok = False
         except TypeError:
+            app_desc_ok = False
             logger.info('Invalid infrastructure descriptor file!')
+        except ValueError:
+            app_desc_ok = False
+            logger.info('Value error!')
 
         if ((app_desc_ok and infra_desc_ok and exec_tree_ok) == True):
             # Get process names from infrastructure descriptor
@@ -336,7 +360,7 @@ def Start_automatic_debug_session(app_name, parallelized=False):
 
                 # Refresh other instances' breakpoint data
                 while (mstep_repo.Is_all_process_in_infra_refreshed(instance_id) != True):
-                    time.sleep(4)
+                    time.sleep(5)
 
                 # Check if current state already exists in exec-tree, If no, insert it
                 process_states = mstep_repo.Get_global_state_for_infra(instance_id)
