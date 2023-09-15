@@ -20,7 +20,7 @@ def Register_new_application(app_data):
     """
 
     new_app = mstep_db.Application()
-    new_app.app_name = app_data['application_name']
+    new_app.app_name = app_data['scenario_name']
     new_app.orch = app_data['orchestrator']['type'].lower()
     new_app.infra_file = ''
     new_app.app_desc_file = app_data['app_desc_file']
@@ -28,9 +28,9 @@ def Register_new_application(app_data):
     if (new_app.orch == 'occopus'):
         new_app.infra_file = os.path.join('infra_defs', app_data['orchestrator'][new_app.orch]['infra_file'])
     elif (new_app.orch == 'terraform'):
-        new_app.infra_file = app_data['orchestrator'][new_app.orch]['infra_file']
+        new_app.infra_file = app_data['orchestrator'][new_app.orch]['infra_files']
     
-    new_app.orch_loc = app_data['orchestrator']['url']
+    new_app.orch_loc = app_data['orchestrator'][new_app.orch]['url']
     new_app.processes = app_data['processes']
     new_app.creation_date = datetime.now()
 
