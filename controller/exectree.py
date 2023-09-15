@@ -297,90 +297,120 @@ def Update_node_app_specification_evaluation(app, new_data, app_instance_id, col
 
     specification = ""
 
-    operators_shorthand = {'equals': '=', 'not_equals':'<>', 'less_than_eq':'<=', 'less_than':'<', 'greater_than_eq':'>=', 'greater_than':'>', 'between': '><', 'exactly':'exactly', 'contains':'contains'}
+    variables_statements = {'statements': [], 'variables': {}}
 
     print('')
     try:
         specification = yaml.safe_load(open(app.app_desc_file, 'r'))['specification']
 
-        processes_data = {}
-        processes_evaluated = {}
-        for act_proc_name in new_data[app_instance_id].keys():
-            processes_data[act_proc_name] = {}
-            processes_evaluated[act_proc_name] ={}
-
-            for act_proc_num in new_data[app_instance_id][act_proc_name].keys():
-                processes_data[act_proc_name][act_proc_num] = {}
-                processes_evaluated[act_proc_name][act_proc_num] = {}
-
-                for act_proc_var_group in new_data[app_instance_id][act_proc_name][act_proc_num].keys():
-                    for act_proc_var, act_proc_var_value in new_data[app_instance_id][act_proc_name][act_proc_num][act_proc_var_group].items():
-                        processes_data[act_proc_name][act_proc_num][act_proc_var] = act_proc_var_value
-                        processes_evaluated[act_proc_name][act_proc_num][act_proc_var] = None
-
-
-        for act_proc_name, variables_list in specification.items():
+        for act_var, act_var_content in specification['variables'].items():
+            print(f'\tEvaluating global variable: {act_var}')
             
-            num_of_act_proc_name = 0
-            try:
-                num_of_act_proc_name = len( processes_data[act_proc_name].items() )
-            except KeyError:
-                print(f'\tCould not evalute {variable_name} for processes {act_proc_name}.')
-                continue
+            processes_to_check = new_data[app_instance_id][act_var_content['vm']]
 
-            for act_variable in variables_list:
-                
-                i = 0
-                variable_name = act_variable["variable"]["name"]
+            operator = ""
+            expected_val = ""
 
-                while (i < num_of_act_proc_name):
-                    variable_operator = list(act_variable['variable']['expected'].keys())
-
-                    if ( act_proc_name in processes_data.keys() and variable_name in processes_data[act_proc_name][i + 1].keys() and variable_operator[0] in operators_shorthand.keys() ):
-                        received_data = processes_data[act_proc_name][i + 1][variable_name]
-                        processes_evaluated[act_proc_name][i + 1][variable_name] = Evaluate_existing_process_variable(received_data, variable_operator[0], act_variable['variable']['expected'][variable_operator[0]])
-
-                        if ( variable_operator[0] == "between" ):
-                            print(f"\tCould evaluate '{variable_name}' for process {act_proc_name}[{i + 1}], expected '{received_data} {operators_shorthand[variable_operator[0]]} {act_variable['variable']['expected'][variable_operator[0]][:2]}', got: '{received_data}' ({processes_evaluated[act_proc_name][i + 1][variable_name]})")
-                        else:
-                            print(f"\tCould evaluate '{variable_name}' for process {act_proc_name}[{i + 1}], expected '{received_data} {operators_shorthand[variable_operator[0]]} {act_variable['variable']['expected'][variable_operator[0]]}', got: '{received_data}' ({processes_evaluated[act_proc_name][i + 1][variable_name]})")
+            if (type(act_var_content['expected']) == bool):
+                operator = "bool_eq"
+                expected_val = act_var_content['expected']
+            elif (type(act_var_content['expected']) == int):
+                operator = "equals"
+                expected_val = act_var_content['expected']
+            elif (type(act_var_content['expected']) == str):
+                if (act_var_content['expected'][0] == '='):
+                    operator = "equals"
+                    expected_val = act_var_content['expected'].split('=')[1].strip()
+                elif (act_var_content['expected'][0] == '>'):
+                    if (act_var_content['expected'][1] == '='):
+                        operator = "greater_than_eq"
+                        expected_val = act_var_content['expected'].split('>=')[1].strip()
                     else:
-                        print(f'\tCould not evalute {variable_name} for process {act_proc_name}[{i + 1}]')
+                        operator = "greater_than"
+                        expected_val = act_var_content['expected'].split('>')[1].strip()
+                elif (act_var_content['expected'][0] == '<'):
+                    if (act_var_content['expected'][1] == '='):
+                        operator = "less_than_eq"
+                        expected_val = act_var_content['expected'].split('<=')[1].strip()
+                    else:
+                        operator = "less_than"
+                        expected_val = act_var_content['expected'].split('<')[1].strip()
+                elif (act_var_content['expected'][0] == '!'):
+                    if (act_var_content['expected'][1] == '='):
+                        operator = "not_equals"
+                        expected_val = act_var_content['expected'].split('!=')[1].strip()
+                elif (act_var_content['expected'][0:6] == "exactly"):
+                    operator = "exactly"
+                    expected_val = act_var_content['expected'].split('exactly')[1].strip()
+                elif (act_var_content['expected'][0:7] == "contains"):
+                    operator = "contains"
+                    expected_val = act_var_content['expected'].split('contains')[1].strip()
 
-                    i += 1
-             
+            variables_statements['variables'][act_var] = {}
+            variables_statements['variables'][act_var]['local_vars'] = []
+            variables_statements['variables'][act_var]['group_eval'] = False
+
+            for proc_num, proc_data in processes_to_check.items():
+                for var_k, var_v in proc_data['processData'].items():
+                    if var_k == act_var_content['name']:
+                        evaluated = Evaluate_existing_process_variable(var_v, operator, expected_val)
+                        print(f'\t\t({proc_num}): {var_k}: {var_v}\t(expected: "{act_var_content["expected"]}", evaluation: {evaluated})')
+                        variables_statements['variables'][act_var]['local_vars'].append( evaluated )
+
+                for var_k, var_v in proc_data['userData'].items():
+                    if var_k == act_var_content['name']:
+                        evaluated = Evaluate_existing_process_variable(var_v, operator, expected_val)
+                        print(f'\t\t({proc_num}): {var_k}: {var_v}\t(expected: "{act_var_content["expected"]}", evaluation: {evaluated})')
+                        variables_statements['variables'][act_var]['local_vars'].append( evaluated )
+
+            if (act_var_content['group'].lower() == 'all'):
+                group_eval = True
+                for val in variables_statements['variables'][act_var]['local_vars']:
+                    if val == False:
+                        group_eval = False
+                        break
+                
+                variables_statements['variables'][act_var]['group_eval'] = group_eval
+
+            elif (act_var_content['group'].lower() == 'any'):
+                group_eval = False
+                for val in variables_statements['variables'][act_var]['local_vars']:
+                    if val == True:
+                        group_eval = True
+                        break
+                    
+                variables_statements['variables'][act_var]['group_eval'] = group_eval
+
+            elif (act_var_content['group'].lower() == 'none'):
+                group_eval = True
+                for val in variables_statements['variables'][act_var]['local_vars']:
+                    if val == True:
+                        group_eval = False
+                        break
+
+                variables_statements['variables'][act_var]['group_eval'] = group_eval
+            
+            print(f'\t\tGrouping: "{act_var_content["group"].lower()}"\t\t(evaluation: "{variables_statements["variables"][act_var]["group_eval"]}")')
+            print()
+
+        for statement in specification['statements']:
+            print(f'\tEvaluating statement: {statement}')
+            replaced = statement
+            for act_var in variables_statements['variables']:
+                print(f'\t\t{act_var}: {variables_statements["variables"][act_var]["group_eval"]}')
+                replaced = replaced.replace(act_var, str(variables_statements['variables'][act_var]['group_eval']))
+            
+            statement_evaluation = eval(replaced)
+            print(f'\t\tEvaluating: {replaced}\t(result: {statement_evaluation})')
+            variables_statements["statements"].append({statement: statement_evaluation})
+            print()
+       
     except Exception:
         tb = traceback.format_exc()
         print('An error has occured...\r\n{}\r\n'.format(tb))
-        pass
-    print('')
 
-    processes_evaluated['_GLOBAL'] = None
-    global_predicate = yaml.safe_load(open(app.app_desc_file, 'r'))['specification_global']
-    global_predicate_evaluated = None
-    if ( Check_process_and_variable_names(global_predicate, processes_evaluated) == True ):
-        new_string = re.split(r'( and | or |\(|\))', global_predicate)
-        new_string_2 = []
-        for act_split in new_string:
-            to_append = act_split
-            if ' is ' in act_split:
-                variable_string = re.split(r"( is )", act_split)
-                variable_value = Get_variable_value(variable_string[0], processes_evaluated)
-                variable_string[0] = "".join([str(variable_value), ' '])
-                variable_string[1] = ' == '
-                to_append = "".join(act_item for act_item in variable_string)
-    
-            new_string_2.append(to_append)
-        
-        global_predicate_evaluated = eval("".join(act_item for act_item in new_string_2))
-
-        print(f'\tTo evalueate: \t{global_predicate}')
-        print(f'\tSubstituted: \t{"".join(act_item for act_item in new_string_2)}')
-        print(f'\tEvaluation: \t{global_predicate_evaluated}\r\n')
-
-    processes_evaluated['_GLOBAL'] = global_predicate_evaluated
     new_evaluation = {}
-    new_evaluation[app_instance_id] = processes_evaluated
+    new_evaluation[app_instance_id] = variables_statements
     evaluated = list(json.loads(coll_bp_to_update['evaluation']))
     evaluated.append(new_evaluation)
 
@@ -706,6 +736,12 @@ def Evaluate_existing_process_variable(received_data: str, operator: str, expect
         ret_value = (str(received_data) == str(expected))
     elif (operator == 'contains' and received_data != ""): 
         ret_value = (str(expected) in received_data)
+    elif (operator == 'bool_eq' and received_data != ""):
+        if received_data.lower() == 'true':
+            received_data = True
+        elif received_data.lower() == 'false':
+            received_data = False
+        ret_value = (received_data == expected)
     else:
         ret_value = False
         
